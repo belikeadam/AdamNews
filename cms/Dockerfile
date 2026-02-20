@@ -1,4 +1,4 @@
-FROM node:18-alpine AS build
+FROM node:20-alpine AS build
 
 RUN apk update && apk add --no-cache \
     build-base gcc autoconf automake \
@@ -7,15 +7,15 @@ RUN apk update && apk add --no-cache \
 ENV NODE_ENV=production
 WORKDIR /opt/
 
-COPY package.json package-lock.json* ./
-RUN npm ci --production
+COPY package.json ./
+RUN npm install --omit=dev
 
 ENV PATH=/opt/node_modules/.bin:$PATH
 WORKDIR /opt/app
 COPY . .
 RUN npm run build
 
-FROM node:18-alpine
+FROM node:20-alpine
 RUN apk add --no-cache vips-dev
 
 ENV NODE_ENV=production
