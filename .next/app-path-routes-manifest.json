@@ -1,0 +1,19 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/api-docs/page": "/api-docs",
+  "/api/auth/[...nextauth]/route": "/api/auth/[...nextauth]",
+  "/api/revalidate/route": "/api/revalidate",
+  "/api/stripe/checkout/route": "/api/stripe/checkout",
+  "/api/stripe/webhook/route": "/api/stripe/webhook",
+  "/articles/[slug]/page": "/articles/[slug]",
+  "/dashboard/analytics/page": "/dashboard/analytics",
+  "/dashboard/page": "/dashboard",
+  "/dashboard/posts/[id]/edit/page": "/dashboard/posts/[id]/edit",
+  "/dashboard/posts/page": "/dashboard/posts",
+  "/dashboard/subscribers/page": "/dashboard/subscribers",
+  "/favicon.ico/route": "/favicon.ico",
+  "/login/page": "/login",
+  "/page": "/",
+  "/plans/page": "/plans"
+}

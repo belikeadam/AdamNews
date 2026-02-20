@@ -1,0 +1,111 @@
+'use client'
+
+import Link from 'next/link'
+import Badge from '@/components/ui/Badge'
+import Button from '@/components/ui/Button'
+import { formatDate } from '@/lib/utils'
+
+interface Post {
+  id: number
+  title: string
+  status: 'published' | 'draft' | 'scheduled' | 'review'
+  author: string
+  category: string
+  views: number
+  premium: boolean
+  date: string
+}
+
+interface PostsTableProps {
+  posts: Post[]
+}
+
+const STATUS_VARIANT = {
+  published: 'success' as const,
+  draft: 'default' as const,
+  scheduled: 'accent' as const,
+  review: 'warning' as const,
+}
+
+export default function PostsTable({ posts }: PostsTableProps) {
+  if (posts.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-4xl mb-3">&#9997;</p>
+        <p className="text-[var(--muted)] mb-4">No articles yet</p>
+        <Link href="/dashboard/posts/new/edit">
+          <Button>Create your first article</Button>
+        </Link>
+      </div>
+    )
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-[var(--border)] text-left">
+            <th className="pb-3 font-medium text-[var(--muted)]">Title</th>
+            <th className="pb-3 font-medium text-[var(--muted)]">Status</th>
+            <th className="pb-3 font-medium text-[var(--muted)] hidden sm:table-cell">
+              Author
+            </th>
+            <th className="pb-3 font-medium text-[var(--muted)] hidden md:table-cell">
+              Category
+            </th>
+            <th className="pb-3 font-medium text-[var(--muted)] hidden lg:table-cell">
+              Views
+            </th>
+            <th className="pb-3 font-medium text-[var(--muted)] hidden lg:table-cell">
+              Date
+            </th>
+            <th className="pb-3 font-medium text-[var(--muted)]">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {posts.map((post) => (
+            <tr
+              key={post.id}
+              className="border-b border-[var(--border)] hover:bg-[var(--surface)]"
+            >
+              <td className="py-3 pr-4">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-[var(--text)] line-clamp-1">
+                    {post.title}
+                  </span>
+                  {post.premium && <Badge variant="warning">$</Badge>}
+                </div>
+              </td>
+              <td className="py-3 pr-4">
+                <Badge variant={STATUS_VARIANT[post.status]}>
+                  {post.status}
+                </Badge>
+              </td>
+              <td className="py-3 pr-4 text-[var(--muted)] hidden sm:table-cell">
+                {post.author}
+              </td>
+              <td className="py-3 pr-4 text-[var(--muted)] hidden md:table-cell">
+                {post.category}
+              </td>
+              <td className="py-3 pr-4 text-[var(--muted)] hidden lg:table-cell">
+                {post.views.toLocaleString()}
+              </td>
+              <td className="py-3 pr-4 text-[var(--muted)] hidden lg:table-cell">
+                {formatDate(post.date)}
+              </td>
+              <td className="py-3">
+                <div className="flex items-center gap-2">
+                  <Link href={`/dashboard/posts/${post.id}/edit`}>
+                    <Button variant="ghost" size="sm">
+                      Edit
+                    </Button>
+                  </Link>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
