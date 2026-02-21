@@ -1,11 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import TechBar from '@/components/layout/TechBar'
 import Card, { CardContent } from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
-import ArchCallout from '@/components/shared/ArchCallout'
 import { PLANS } from '@/constants/plans'
 import { cn } from '@/lib/utils'
 
@@ -39,32 +37,25 @@ export default function PlansPage() {
 
   return (
     <>
-      <TechBar
-        badges={[
-          { label: 'SSR', tooltip: 'Server-side rendered', variant: 'success' },
-          { label: 'Stripe Checkout', tooltip: 'Payments handled by Stripe hosted checkout' },
-          { label: 'JWT Claims', tooltip: 'Plan stored in JWT token claims' },
-        ]}
-      />
-
-      <div className="max-w-5xl mx-auto px-4 py-12 pb-20 md:pb-12">
-        <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-[var(--text)] mb-3">
+      {/* Gradient header section */}
+      <div className="bg-gradient-to-b from-[var(--surface)] to-[var(--bg)] border-b border-[var(--border)]">
+        <div className="max-w-5xl mx-auto px-4 py-16 pb-20 md:py-20 text-center">
+          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-[var(--text)] mb-4" style={{ fontFamily: 'var(--font-headline)' }}>
             Choose your plan
           </h1>
-          <p className="text-[var(--muted)] mb-6">
-            Unlock premium content and exclusive features
+          <p className="text-lg text-[var(--muted)] mb-8 max-w-md mx-auto">
+            Unlock premium content and exclusive features with a plan that fits you.
           </p>
 
           {/* Monthly / Annual toggle */}
-          <div className="inline-flex items-center bg-[var(--surface)] rounded-lg p-1 border border-[var(--border)]">
+          <div className="inline-flex items-center bg-[var(--surface)] rounded-full p-1 border border-[var(--border)]">
             <button
               onClick={() => setBilling('monthly')}
               className={cn(
-                'px-4 h-9 rounded text-sm font-medium transition-colors',
+                'px-5 h-10 rounded-full text-sm font-medium transition-all',
                 billing === 'monthly'
                   ? 'bg-[var(--bg)] shadow-sm text-[var(--text)]'
-                  : 'text-[var(--muted)]'
+                  : 'text-[var(--muted)] hover:text-[var(--text)]'
               )}
             >
               Monthly
@@ -72,10 +63,10 @@ export default function PlansPage() {
             <button
               onClick={() => setBilling('annual')}
               className={cn(
-                'px-4 h-9 rounded text-sm font-medium transition-colors',
+                'px-5 h-10 rounded-full text-sm font-medium transition-all',
                 billing === 'annual'
                   ? 'bg-[var(--bg)] shadow-sm text-[var(--text)]'
-                  : 'text-[var(--muted)]'
+                  : 'text-[var(--muted)] hover:text-[var(--text)]'
               )}
             >
               Annual{' '}
@@ -85,44 +76,51 @@ export default function PlansPage() {
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Plan cards */}
-        <div className="grid md:grid-cols-3 gap-6">
+      {/* Plan cards */}
+      <div className="max-w-5xl mx-auto px-4 -mt-10 pb-20 md:pb-16">
+        <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
           {PLANS.map((plan) => (
             <Card
               key={plan.id}
+              hover
               className={cn(
                 'relative',
-                plan.highlight && 'ring-2 ring-[var(--accent)]'
+                plan.highlight
+                  ? 'ring-2 ring-[var(--accent)] shadow-lg scale-[1.02]'
+                  : ''
               )}
             >
               {plan.highlight && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <Badge variant="accent" size="md">
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                  <Badge variant="accent" size="md" pill>
                     Most popular
                   </Badge>
                 </div>
               )}
-              <CardContent className="pt-6">
+              <CardContent className="pt-8 pb-6">
                 <h3 className="text-lg font-semibold text-[var(--text)] mb-1">
                   {plan.name}
                 </h3>
-                <div className="mb-4">
-                  <span className="text-3xl font-bold text-[var(--text)]">
+                <div className="mb-6">
+                  <span className="text-4xl font-bold tracking-tight text-[var(--text)]">
                     RM{plan.price[billing]}
                   </span>
                   {plan.price[billing] > 0 && (
-                    <span className="text-[var(--muted)]">/mo</span>
+                    <span className="text-[var(--muted)] ml-1">/mo</span>
                   )}
                 </div>
 
-                <ul className="space-y-2 mb-6">
+                <ul className="space-y-3 mb-8">
                   {plan.features.map((feature) => (
                     <li
                       key={feature}
-                      className="flex items-center gap-2 text-sm text-[var(--muted)]"
+                      className="flex items-start gap-2.5 text-sm text-[var(--muted)]"
                     >
-                      <span className="text-[var(--success)]">&#10003;</span>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
                       {feature}
                     </li>
                   ))}
@@ -131,6 +129,7 @@ export default function PlansPage() {
                 <Button
                   variant={plan.highlight ? 'primary' : 'outline'}
                   className="w-full"
+                  size="lg"
                   onClick={() => handleSubscribe(plan.id)}
                 >
                   {plan.cta}
@@ -140,19 +139,9 @@ export default function PlansPage() {
           ))}
         </div>
 
-        {/* Tech note */}
-        <p className="text-center text-xs text-[var(--muted)] mt-8">
-          Payments via Stripe &middot; FPX via Billplz &middot; JWT subscriber
-          claims &middot; Redis session TTL 24h
+        <p className="text-center text-xs text-[var(--muted)] mt-10">
+          Secure payments via Stripe &middot; Cancel anytime &middot; 30-day money-back guarantee
         </p>
-
-        <ArchCallout
-          apiCall="POST /api/stripe/checkout — creates Stripe Checkout Session"
-          caching="No caching — real-time payment flow"
-          auth="Requires authenticated session"
-          rationale="Stripe Checkout handles PCI compliance. Webhook provisions access on payment success."
-          className="mt-6"
-        />
       </div>
     </>
   )

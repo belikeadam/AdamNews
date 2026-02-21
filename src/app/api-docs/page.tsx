@@ -8,79 +8,78 @@ import Button from '@/components/ui/Button'
 import ArchCallout from '@/components/shared/ArchCallout'
 import { cn } from '@/lib/utils'
 
+const STRAPI_BASE = 'http://localhost:1337'
+
 const ENDPOINTS = [
   {
     id: 'articles',
     method: 'GET',
-    path: '/api/v1/articles',
-    description: 'List all published articles with pagination. Redis cached.',
+    path: '/api/articles',
+    description: 'List all published articles. Supports Strapi query parameters for filtering, sorting, and pagination.',
     auth: 'Public',
     params: [
-      { name: 'page', type: 'number', required: false, description: 'Page number (default: 1)' },
-      { name: 'pageSize', type: 'number', required: false, description: 'Items per page (default: 10)' },
-      { name: 'category', type: 'string', required: false, description: 'Filter by category slug' },
+      { name: 'populate', type: 'string', required: false, description: 'Include relations: * for all, or specific fields' },
+      { name: 'pagination[page]', type: 'number', required: false, description: 'Page number (default: 1)' },
+      { name: 'pagination[pageSize]', type: 'number', required: false, description: 'Items per page (default: 25)' },
+      { name: 'filters[category][slug][$eq]', type: 'string', required: false, description: 'Filter by category slug' },
+      { name: 'sort', type: 'string', required: false, description: 'Sort order, e.g. publishedAt:desc' },
     ],
-    curl: `curl -X GET "http://localhost:3000/api/v1/articles?page=1&pageSize=10"`,
-    tryUrl: '/api/v1/articles?page=1&pageSize=5',
+    curl: `curl "${STRAPI_BASE}/api/articles?populate=*&sort=publishedAt:desc&pagination[pageSize]=5"`,
+    tryUrl: `${STRAPI_BASE}/api/articles?populate=*&sort=publishedAt:desc&pagination[pageSize]=3`,
   },
   {
-    id: 'auth',
-    method: 'POST',
-    path: '/api/v1/auth/login',
-    description: 'Authenticate user and receive JWT token.',
+    id: 'categories',
+    method: 'GET',
+    path: '/api/categories',
+    description: 'List all article categories sorted alphabetically.',
     auth: 'Public',
     params: [
-      { name: 'email', type: 'string', required: true, description: 'User email address' },
-      { name: 'password', type: 'string', required: true, description: 'User password' },
+      { name: 'sort', type: 'string', required: false, description: 'Sort field, e.g. name:asc' },
     ],
-    curl: `curl -X POST "http://localhost:3000/api/v1/auth/login" \\
-  -H "Content-Type: application/json" \\
-  -d '{"email":"admin@AdamNews.com","password":"demo1234"}'`,
-    tryUrl: null,
+    curl: `curl "${STRAPI_BASE}/api/categories?sort=name:asc"`,
+    tryUrl: `${STRAPI_BASE}/api/categories?sort=name:asc`,
   },
   {
-    id: 'subscribe',
-    method: 'POST',
-    path: '/api/v1/subscribe',
-    description: 'Create Stripe Checkout session for subscription.',
-    auth: 'Bearer token',
+    id: 'authors',
+    method: 'GET',
+    path: '/api/authors',
+    description: 'List all authors with their profile information.',
+    auth: 'Public',
     params: [
-      { name: 'priceId', type: 'string', required: true, description: 'Stripe Price ID' },
+      { name: 'populate', type: 'string', required: false, description: 'Include relations (e.g. avatar)' },
     ],
-    curl: `curl -X POST "http://localhost:3000/api/v1/subscribe" \\
-  -H "Authorization: Bearer <token>" \\
+    curl: `curl "${STRAPI_BASE}/api/authors?populate=*"`,
+    tryUrl: `${STRAPI_BASE}/api/authors?populate=*`,
+  },
+  {
+    id: 'checkout',
+    method: 'POST',
+    path: '/api/stripe/checkout',
+    description: 'Create a Stripe Checkout session for subscription plans. Requires an active NextAuth session.',
+    auth: 'Authenticated (NextAuth session)',
+    params: [
+      { name: 'priceId', type: 'string', required: true, description: 'Stripe Price ID from plan configuration' },
+    ],
+    curl: `curl -X POST "http://localhost:3000/api/stripe/checkout" \\
   -H "Content-Type: application/json" \\
+  -H "Cookie: next-auth.session-token=..." \\
   -d '{"priceId":"price_standard_monthly"}'`,
-    tryUrl: null,
-  },
-  {
-    id: 'graphql',
-    method: 'POST',
-    path: '/graphql',
-    description: 'GraphQL endpoint for complex queries (Strapi).',
-    auth: 'Public / Bearer token',
-    params: [
-      { name: 'query', type: 'string', required: true, description: 'GraphQL query string' },
-      { name: 'variables', type: 'object', required: false, description: 'Query variables' },
-    ],
-    curl: `curl -X POST "http://localhost:1337/graphql" \\
-  -H "Content-Type: application/json" \\
-  -d '{"query":"{ articles { data { id attributes { title slug } } } }"}'`,
     tryUrl: null,
   },
   {
     id: 'revalidate',
     method: 'POST',
-    path: '/api/v1/cache/revalidate',
-    description: 'Trigger ISR revalidation for a specific path or tag.',
-    auth: 'Webhook secret',
+    path: '/api/revalidate',
+    description: 'Trigger ISR revalidation when content changes in Strapi. Used as a webhook endpoint.',
+    auth: 'Webhook secret (x-webhook-secret header)',
     params: [
-      { name: 'slug', type: 'string', required: false, description: 'Article slug to revalidate' },
-      { name: 'tag', type: 'string', required: false, description: 'Cache tag to invalidate' },
+      { name: 'model', type: 'string', required: false, description: 'Strapi content type that changed' },
+      { name: 'entry', type: 'object', required: false, description: 'The entry data from Strapi webhook' },
     ],
-    curl: `curl -X POST "http://localhost:3000/api/v1/cache/revalidate" \\
+    curl: `curl -X POST "http://localhost:3000/api/revalidate" \\
   -H "x-webhook-secret: your_secret" \\
-  -d '{"slug":"my-article"}'`,
+  -H "Content-Type: application/json" \\
+  -d '{"model":"article","entry":{"slug":"my-article"}}'`,
     tryUrl: null,
   },
 ]
@@ -133,11 +132,11 @@ export default function ApiDocsPage() {
       />
 
       <div className="max-w-7xl mx-auto px-4 py-6 pb-20 md:pb-6">
-        <h1 className="text-3xl font-bold text-[var(--text)] mb-2">
+        <h1 className="text-3xl font-bold text-[var(--text)] mb-2" style={{ fontFamily: 'var(--font-headline)' }}>
           API Reference
         </h1>
         <p className="text-[var(--muted)] mb-6">
-          Interactive documentation for the AdamNews API.
+          Interactive documentation for The Adam News API. Powered by Strapi CMS and Next.js.
         </p>
 
         <div className="grid lg:grid-cols-[200px,1fr,1fr] gap-6">

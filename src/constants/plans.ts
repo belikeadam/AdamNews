@@ -13,8 +13,8 @@ export const PLANS = [
     name: 'Standard',
     price: { monthly: 15, annual: 12 },
     stripePriceId: {
-      monthly: process.env.STRIPE_STANDARD_MONTHLY_PRICE_ID ?? null,
-      annual: process.env.STRIPE_STANDARD_ANNUAL_PRICE_ID ?? null,
+      monthly: process.env.STRIPE_STANDARD_MONTHLY_PRICE_ID || process.env.STRIPE_STANDARD_PRICE_ID || null,
+      annual: process.env.STRIPE_STANDARD_ANNUAL_PRICE_ID || null,
     },
     features: [
       'Unlimited articles',
@@ -30,8 +30,8 @@ export const PLANS = [
     name: 'Premium',
     price: { monthly: 35, annual: 28 },
     stripePriceId: {
-      monthly: process.env.STRIPE_PREMIUM_MONTHLY_PRICE_ID ?? null,
-      annual: process.env.STRIPE_PREMIUM_ANNUAL_PRICE_ID ?? null,
+      monthly: process.env.STRIPE_PREMIUM_MONTHLY_PRICE_ID || process.env.STRIPE_PREMIUM_PRICE_ID || null,
+      annual: process.env.STRIPE_PREMIUM_ANNUAL_PRICE_ID || null,
     },
     features: [
       'Everything in Standard',

@@ -1,68 +1,60 @@
-﻿import { Metadata } from 'next'
-import TechBar from '@/components/layout/TechBar'
-import HeroArticle from '@/components/reader/HeroArticle'
-import ArticleCard from '@/components/reader/ArticleCard'
-import ArchCallout from '@/components/shared/ArchCallout'
+import { Metadata } from 'next'
+import HeroCarousel from '@/components/reader/HeroCarousel'
 import { getArticles, getTrendingArticles, getCategories } from '@/lib/api/strapi'
 import HomeClient from './home-client'
 
 export const revalidate = 60
 
 export const metadata: Metadata = {
-  title: 'AdamNews | Modern News Platform',
+  title: 'The Adam News | Independent Journalism',
   description:
-    'A modern news platform built with Next.js, Strapi, and Stripe. Showcasing ISR, server components, and real-time content management.',
+    'Breaking news, in-depth analysis, and opinion. Independent journalism since 2024.',
 }
 
-export default async function HomePage() {
+interface HomePageProps {
+  searchParams: Promise<{ category?: string }>
+}
+
+export default async function HomePage({ searchParams }: HomePageProps) {
+  const { category } = await searchParams
   let articles, trending, categories
 
   try {
     ;[articles, trending, categories] = await Promise.all([
-      getArticles({ pageSize: 12 }),
+      getArticles({ pageSize: 30 }),
       getTrendingArticles(),
       getCategories(),
     ])
   } catch {
-    // Strapi not available — render with demo data
     return <HomeFallback />
   }
 
-  const featuredArticle = trending.data[0] || articles.data[0]
-  const gridArticles = articles.data.filter(
-    (a) => a.id !== featuredArticle?.id
-  )
+  // Carousel: trending articles, supplement with latest if needed
+  const carouselArticles = trending.data.slice(0, 5)
+  if (carouselArticles.length < 3) {
+    const supplement = articles.data
+      .filter((a) => !carouselArticles.find((c) => c.id === a.id))
+      .slice(0, 3 - carouselArticles.length)
+    carouselArticles.push(...supplement)
+  }
+
+  const carouselIds = new Set(carouselArticles.map((a) => a.id))
+  const gridArticles = articles.data.filter((a) => !carouselIds.has(a.id))
 
   return (
     <>
-      <TechBar
-        badges={[
-          { label: 'ISR \u00b7 60s', tooltip: 'Page revalidates every 60 seconds', variant: 'warning' },
-          { label: 'Strapi REST', tooltip: 'Content fetched from Strapi v4 REST API' },
-          { label: 'Next.js App Router', tooltip: 'Using React Server Components' },
-          { label: 'TypeScript', tooltip: 'Fully typed with TypeScript' },
-        ]}
-      />
+      {carouselArticles.length > 0 && (
+        <section>
+          <HeroCarousel articles={carouselArticles} />
+        </section>
+      )}
 
-      <div className="max-w-7xl mx-auto px-4 py-6 pb-20 md:pb-6">
-        <ArchCallout
-          apiCall="GET /api/articles?populate=*&sort=publishedAt:desc"
-          caching="ISR revalidate: 60s, Redis cache-aside with 60s TTL"
-          auth="Public — no authentication required"
-          rationale="ISR balances freshness with performance. Stale content served while revalidating in background."
-          className="mb-6"
-        />
-
-        {featuredArticle && (
-          <section className="mb-8">
-            <HeroArticle article={featuredArticle} />
-          </section>
-        )}
-
+      <div className="max-w-7xl mx-auto px-4 py-6 pb-20 md:pb-8">
         <HomeClient
           articles={gridArticles}
           categories={categories.data}
           trending={trending.data}
+          initialCategory={category || null}
         />
       </div>
     </>
@@ -71,46 +63,33 @@ export default async function HomePage() {
 
 function HomeFallback() {
   return (
-    <>
-      <TechBar
-        badges={[
-          { label: 'ISR \u00b7 60s', tooltip: 'Page revalidates every 60 seconds', variant: 'warning' },
-          { label: 'Strapi REST', tooltip: 'Content fetched from Strapi v4 REST API' },
-          { label: 'Next.js App Router', tooltip: 'Using React Server Components' },
-        ]}
-      />
-      <div className="max-w-7xl mx-auto px-4 py-12 text-center">
-        <h1 className="text-3xl font-bold text-[var(--text)] mb-4">
-          AdamNews
-        </h1>
-        <p className="text-[var(--muted)] mb-6 max-w-xl mx-auto">
-          A modern news platform built with Next.js 14 App Router, Strapi v4 CMS,
-          NextAuth.js, and Stripe. Start the Strapi CMS to see articles here.
-        </p>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div
-              key={i}
-              className="bg-[var(--surface)] border border-[var(--border)] rounded overflow-hidden"
-            >
-              <div className="aspect-[16/9] bg-[var(--surface-2)] animate-pulse" />
-              <div className="p-4 space-y-2">
-                <div className="h-4 bg-[var(--surface-2)] rounded animate-pulse w-3/4" />
-                <div className="h-3 bg-[var(--surface-2)] rounded animate-pulse" />
-                <div className="h-3 bg-[var(--surface-2)] rounded animate-pulse w-1/2" />
-              </div>
+    <div className="max-w-7xl mx-auto px-4 py-16 text-center">
+      <h1
+        className="text-4xl font-bold tracking-tight text-[var(--text)] mb-4"
+        style={{ fontFamily: 'var(--font-headline)' }}
+      >
+        The Adam News
+      </h1>
+      <p className="text-[var(--muted)] mb-8 max-w-xl mx-auto text-lg">
+        Start the Strapi CMS to see articles here.
+      </p>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-10">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="border border-[var(--border)] overflow-hidden">
+            <div className="aspect-[16/9] bg-[var(--surface-2)] animate-pulse" />
+            <div className="p-5 space-y-3">
+              <div className="h-4 bg-[var(--surface-2)] animate-pulse w-3/4" />
+              <div className="h-3 bg-[var(--surface-2)] animate-pulse" />
             </div>
-          ))}
-        </div>
-        <div className="mt-8 bg-[var(--surface)] border border-[var(--border)] rounded p-6">
-          <h2 className="font-semibold text-[var(--text)] mb-2">
-            Getting Started
-          </h2>
-          <code className="text-sm text-[var(--muted)]">
-            docker compose up &mdash; starts Postgres, Redis, Strapi &amp; Next.js
-          </code>
-        </div>
+          </div>
+        ))}
       </div>
-    </>
+      <div className="mt-10 border border-[var(--border)] p-8 max-w-md mx-auto">
+        <h2 className="font-semibold text-[var(--text)] mb-2">Getting Started</h2>
+        <code className="text-sm text-[var(--muted)]">
+          docker compose up &mdash; starts Postgres, Redis, Strapi &amp; Next.js
+        </code>
+      </div>
+    </div>
   )
 }

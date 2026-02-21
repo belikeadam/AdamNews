@@ -24,13 +24,23 @@ async function fetchStrapi<T>(
   options?: { revalidate?: number; tags?: string[] }
 ): Promise<T> {
   const url = `${STRAPI_URL}${path}`
-  const res = await fetch(url, {
-    headers: getHeaders(),
+  const fetchOpts = {
     next: {
       revalidate: options?.revalidate ?? 60,
       tags: options?.tags,
     },
-  })
+  }
+
+  // Try with token first (if set), fall back to public access on 401/403
+  let res = await fetch(url, { ...fetchOpts, headers: getHeaders() })
+
+  if ((res.status === 401 || res.status === 403) && STRAPI_TOKEN) {
+    // Token is invalid for this Strapi instance — retry without it
+    res = await fetch(url, {
+      ...fetchOpts,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
 
   if (!res.ok) {
     throw new Error(`Strapi fetch failed: ${res.status} ${res.statusText} — ${url}`)

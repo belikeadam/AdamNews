@@ -1,5 +1,10 @@
 export const NAV_ITEMS = [
   { label: 'Home', href: '/' },
+  { label: 'Technology', href: '/?category=technology' },
+  { label: 'Business', href: '/?category=business' },
+  { label: 'Science', href: '/?category=science' },
+  { label: 'General', href: '/?category=general' },
+  { label: 'Search', href: '/search' },
   { label: 'Plans', href: '/plans' },
   { label: 'API Docs', href: '/api-docs' },
 ] as const

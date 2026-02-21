@@ -1,1 +1,35 @@
 node_modules
+.next
+.turbo
+out
+
+# env files
+.env
+.env.local
+.env.*.local
+
+# debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Strapi
+cms/.tmp
+cms/.cache
+cms/build
+cms/dist
+cms/exports
+
+# Docker volumes
+postgres_data
+redis_data

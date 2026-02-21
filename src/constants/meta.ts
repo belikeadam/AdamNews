@@ -1,6 +1,7 @@
-﻿export const SITE_NAME = 'AdamNews'
+﻿export const SITE_NAME = 'The Adam News'
+export const SITE_NAME_UPPER = 'THE ADAM NEWS'
 export const SITE_DESCRIPTION =
-  'A modern news platform built with Next.js, Strapi, and Stripe. Showcasing ISR, server components, and real-time content management.'
+  'Independent journalism and in-depth reporting. Breaking news, analysis, and opinion.'
 export const SITE_URL = process.env.NEXTAUTH_URL || 'http://localhost:3000'
 
 export const DEFAULT_META = {

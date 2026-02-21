@@ -85,6 +85,7 @@ export interface ArticleAttributes {
   trending: boolean
   views: number
   readTime: string | null
+  coverUrl: string | null
   publishedAt: string | null
   createdAt: string
   updatedAt: string

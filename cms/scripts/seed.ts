@@ -1,13 +1,10 @@
-﻿/**
+/**
  * AdamNews Seed Script
  *
- * Seeds the Strapi database with:
- * - 4 categories
- * - 3 authors
- * - 12 articles (fetched from DEV.to public API)
+ * Fetches REAL articles from Dev.to API (free, no auth required)
+ * and seeds them into Strapi with proper categories, authors, and cover images.
  *
  * Run: npx ts-node cms/scripts/seed.ts
- * Or: called on first `docker compose up`
  */
 
 const STRAPI_URL = process.env.STRAPI_URL || 'http://localhost:1337'
@@ -24,40 +21,10 @@ async function strapiPost(path: string, data: Record<string, unknown>) {
     headers,
     body: JSON.stringify({ data }),
   })
-
   if (!res.ok) {
     const text = await res.text()
-    throw new Error(`Strapi POST ${path} failed: ${res.status} — ${text}`)
+    throw new Error(`POST ${path} failed: ${res.status} — ${text}`)
   }
-
-  return res.json()
-}
-
-// Categories
-const CATEGORIES = [
-  { name: 'Technology', slug: 'technology', color: '#2563eb', description: 'Latest in tech, web development, and programming' },
-  { name: 'Business', slug: 'business', color: '#16a34a', description: 'Business strategy, startups, and entrepreneurship' },
-  { name: 'Finance', slug: 'finance', color: '#d97706', description: 'Personal finance, investing, and markets' },
-  { name: 'Lifestyle', slug: 'lifestyle', color: '#dc2626', description: 'Productivity, wellness, and modern living' },
-]
-
-// Authors
-const AUTHORS = [
-  { name: 'Sarah Chen', role: 'Senior Tech Writer', bio: 'Full-stack developer turned tech writer. Covers web technologies, Next.js, and modern JavaScript.', email: 'sarah@AdamNews.com' },
-  { name: 'Marcus Johnson', role: 'Business Editor', bio: 'Former startup founder. Now writes about business strategy, SaaS, and the creator economy.', email: 'marcus@AdamNews.com' },
-  { name: 'Priya Sharma', role: 'Finance Columnist', bio: 'CFA and personal finance enthusiast. Makes complex financial concepts accessible.', email: 'priya@AdamNews.com' },
-]
-
-async function fetchDevToArticles(tag: string, perPage: number) {
-  const res = await fetch(
-    `https://dev.to/api/articles?tag=${tag}&per_page=${perPage}`
-  )
-
-  if (!res.ok) {
-    console.warn(`DEV.to fetch failed for tag=${tag}: ${res.status}`)
-    return []
-  }
-
   return res.json()
 }
 
@@ -68,85 +35,218 @@ function slugify(text: string): string {
     .replace(/\s+/g, '-')
     .replace(/--+/g, '-')
     .trim()
+    .slice(0, 80)
 }
 
-async function seed() {
-  console.log('Starting AdamNews seed...\n')
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
 
-  // 1. Create categories
+// ── Dev.to API helpers ──────────────────────────────────────────────
+
+interface DevToArticle {
+  id: number
+  title: string
+  description: string
+  body_markdown?: string
+  cover_image: string | null
+  social_image: string | null
+  tag_list: string[]
+  tags: string
+  user: { name: string; username: string }
+  published_at: string
+  reading_time_minutes: number
+  url: string
+  positive_reactions_count: number
+}
+
+const TAG_TO_CATEGORY: Record<string, string> = {
+  webdev: 'Technology',
+  javascript: 'Technology',
+  programming: 'Technology',
+  react: 'Technology',
+  node: 'Technology',
+  typescript: 'Technology',
+  python: 'Technology',
+  devops: 'Technology',
+  aws: 'Technology',
+  ai: 'Technology',
+  machinelearning: 'Technology',
+  career: 'Business',
+  startup: 'Business',
+  productivity: 'Business',
+  management: 'Business',
+  science: 'Science',
+  datascience: 'Science',
+  health: 'Science',
+  news: 'General',
+  discuss: 'General',
+  tutorial: 'Technology',
+  beginners: 'Technology',
+}
+
+function categorizeArticle(tags: string[]): string {
+  for (const tag of tags) {
+    const cat = TAG_TO_CATEGORY[tag.toLowerCase()]
+    if (cat) return cat
+  }
+  return 'Technology'
+}
+
+async function fetchDevToArticles(tag: string, count: number): Promise<DevToArticle[]> {
+  const url = `https://dev.to/api/articles?per_page=${count}&tag=${tag}&top=30`
+  console.log(`  Fetching dev.to tag=${tag}...`)
+  const res = await fetch(url)
+  if (!res.ok) {
+    console.warn(`  ! Dev.to API returned ${res.status} for tag=${tag}`)
+    return []
+  }
+  return res.json()
+}
+
+async function fetchDevToArticleBody(id: number): Promise<string> {
+  await delay(350) // respect rate limit (~3 req/s)
+  const res = await fetch(`https://dev.to/api/articles/${id}`)
+  if (!res.ok) return ''
+  const article: DevToArticle = await res.json()
+  return article.body_markdown || ''
+}
+
+// ── Main seed logic ─────────────────────────────────────────────────
+
+const CATEGORIES = [
+  { name: 'Technology', slug: 'technology', color: '#1a1a1a', description: 'Software, hardware, and innovation' },
+  { name: 'Business', slug: 'business', color: '#1a1a1a', description: 'Startups, careers, and the tech economy' },
+  { name: 'Science', slug: 'science', color: '#1a1a1a', description: 'Data science, AI research, and discovery' },
+  { name: 'General', slug: 'general', color: '#1a1a1a', description: 'Community discussions and news' },
+]
+
+async function seed() {
+  console.log('Starting The Adam News seed (Dev.to API)...\n')
+
+  // 1. Fetch articles from Dev.to across multiple tags
+  console.log('Fetching articles from Dev.to API...')
+  const tagQueries = [
+    { tag: 'webdev', count: 8 },
+    { tag: 'ai', count: 6 },
+    { tag: 'career', count: 5 },
+    { tag: 'programming', count: 6 },
+    { tag: 'productivity', count: 4 },
+    { tag: 'datascience', count: 4 },
+  ]
+
+  const allArticles: DevToArticle[] = []
+  const seenIds = new Set<number>()
+
+  for (const { tag, count } of tagQueries) {
+    const articles = await fetchDevToArticles(tag, count)
+    for (const a of articles) {
+      if (!seenIds.has(a.id)) {
+        seenIds.add(a.id)
+        allArticles.push(a)
+      }
+    }
+    await delay(500)
+  }
+
+  console.log(`\nFetched ${allArticles.length} unique articles\n`)
+
+  if (allArticles.length === 0) {
+    console.error('No articles fetched. Check network / Dev.to API availability.')
+    process.exit(1)
+  }
+
+  // 2. Fetch full body for each article
+  console.log('Fetching full article bodies...')
+  for (let i = 0; i < allArticles.length; i++) {
+    const body = await fetchDevToArticleBody(allArticles[i].id)
+    allArticles[i].body_markdown = body
+    process.stdout.write(`  ${i + 1}/${allArticles.length}\r`)
+  }
+  console.log(`  Done — ${allArticles.length} bodies fetched\n`)
+
+  // 3. Extract unique authors
+  const authorMap = new Map<string, { name: string; username: string }>()
+  for (const a of allArticles) {
+    if (!authorMap.has(a.user.username)) {
+      authorMap.set(a.user.username, a.user)
+    }
+  }
+  const uniqueAuthors = Array.from(authorMap.values())
+
+  // 4. Create categories in Strapi
   console.log('Creating categories...')
-  const categoryIds: number[] = []
+  const categoryIds: Record<string, number> = {}
   for (const cat of CATEGORIES) {
     try {
       const res = await strapiPost('/api/categories', cat)
-      categoryIds.push(res.data.id)
+      categoryIds[cat.name] = res.data.id
       console.log(`  + ${cat.name} (id: ${res.data.id})`)
     } catch (e) {
       console.warn(`  ! Skipping ${cat.name}: ${(e as Error).message}`)
     }
   }
 
-  // 2. Create authors
+  // 5. Create authors in Strapi
   console.log('\nCreating authors...')
-  const authorIds: number[] = []
-  for (const author of AUTHORS) {
+  const authorIds: Record<string, number> = {}
+  for (const author of uniqueAuthors) {
     try {
-      const res = await strapiPost('/api/authors', author)
-      authorIds.push(res.data.id)
-      console.log(`  + ${author.name} (id: ${res.data.id})`)
+      const res = await strapiPost('/api/authors', {
+        name: author.name || author.username,
+        role: 'Contributing Writer',
+        bio: `Writer on Dev.to (@${author.username})`,
+        email: `${author.username}@devto.community`,
+      })
+      authorIds[author.username] = res.data.id
+      console.log(`  + ${author.name || author.username} (id: ${res.data.id})`)
     } catch (e) {
       console.warn(`  ! Skipping ${author.name}: ${(e as Error).message}`)
     }
   }
 
-  // 3. Fetch articles from DEV.to
-  console.log('\nFetching articles from DEV.to...')
-  const jsArticles = await fetchDevToArticles('javascript', 8)
-  const webArticles = await fetchDevToArticles('webdev', 4)
-  const allDevTo = [...jsArticles, ...webArticles].slice(0, 12)
-
-  console.log(`  Fetched ${allDevTo.length} articles`)
-
-  // 4. Create articles in Strapi
+  // 6. Create articles in Strapi
   console.log('\nCreating articles...')
-  for (let i = 0; i < allDevTo.length; i++) {
-    const devArticle = allDevTo[i]
-    const isPremium = [0, 2, 4].includes(i)
-    const isTrending = [0, 1].includes(i)
-    const categoryId = categoryIds[i % categoryIds.length] || categoryIds[0]
-    const authorId = authorIds[i % authorIds.length] || authorIds[0]
+  let created = 0
+
+  for (let i = 0; i < allArticles.length; i++) {
+    const a = allArticles[i]
+    const category = categorizeArticle(a.tag_list)
+    const isPremium = i % 5 === 0
+    const isTrending = i < 5
+
+    // Clean up body — remove Dev.to liquid tags
+    let body = a.body_markdown || a.description || ''
+    body = body.replace(/\{%[^%]*%\}/g, '')
 
     const articleData: Record<string, unknown> = {
-      title: devArticle.title,
-      slug: slugify(devArticle.title),
-      excerpt: devArticle.description || '',
-      body: devArticle.body_html || `<p>${devArticle.description || 'Article content here.'}</p>`,
+      title: a.title,
+      slug: slugify(a.title),
+      excerpt: a.description || a.title,
+      body,
       premium: isPremium,
       trending: isTrending,
-      readTime: `${devArticle.reading_time_minutes || 5} min read`,
-      views: Math.floor(Math.random() * 3000),
-      tags: devArticle.tag_list || [],
-      category: categoryId,
-      author: authorId,
-      publishedAt: new Date().toISOString(),
+      readTime: `${a.reading_time_minutes || 3} min read`,
+      views: a.positive_reactions_count * 10 + Math.floor(Math.random() * 500),
+      tags: a.tag_list,
+      coverUrl: a.cover_image || a.social_image || null,
+      category: categoryIds[category] || categoryIds['Technology'],
+      author: authorIds[a.user.username] || Object.values(authorIds)[0],
+      publishedAt: a.published_at || new Date().toISOString(),
     }
 
     try {
-      const res = await strapiPost('/api/articles', articleData)
-      const flags = [
-        isPremium && 'premium',
-        isTrending && 'trending',
-      ].filter(Boolean).join(', ')
-      console.log(
-        `  + [${i + 1}/${allDevTo.length}] ${devArticle.title.slice(0, 50)}... ${flags ? `(${flags})` : ''}`
-      )
+      await strapiPost('/api/articles', articleData)
+      const flags = [isPremium && 'premium', isTrending && 'trending'].filter(Boolean).join(', ')
+      console.log(`  + [${i + 1}/${allArticles.length}] ${a.title.slice(0, 60)}${flags ? ` (${flags})` : ''}`)
+      created++
     } catch (e) {
-      console.warn(`  ! Failed: ${(e as Error).message}`)
+      console.warn(`  ! Failed: ${a.title.slice(0, 40)} — ${(e as Error).message}`)
     }
   }
 
   console.log(
-    `\n\u2705 Seeded ${allDevTo.length} articles, ${CATEGORIES.length} categories, ${AUTHORS.length} authors`
+    `\nDone: ${created} articles, ${CATEGORIES.length} categories, ${uniqueAuthors.length} authors (from Dev.to API)`
   )
 }
 

@@ -15,15 +15,15 @@ export default function CategoryFilter({
   onSelect,
 }: CategoryFilterProps) {
   return (
-    <div className="sticky top-14 z-30 bg-[var(--bg)] border-b border-[var(--border)] overflow-x-auto">
-      <div className="max-w-7xl mx-auto px-4 flex items-center gap-2 h-12 min-w-max">
+    <div className="border-b border-[var(--border)]">
+      <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide">
         <button
           onClick={() => onSelect(null)}
           className={cn(
-            'h-8 px-3 rounded text-sm font-medium transition-colors whitespace-nowrap',
+            'pb-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors',
             !selected
-              ? 'bg-[var(--accent)] text-white'
-              : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)]'
+              ? 'border-[var(--text)] text-[var(--text)]'
+              : 'border-transparent text-[var(--muted)] hover:text-[var(--text)]'
           )}
         >
           All
@@ -33,10 +33,10 @@ export default function CategoryFilter({
             key={cat.id}
             onClick={() => onSelect(cat.attributes.slug)}
             className={cn(
-              'h-8 px-3 rounded text-sm font-medium transition-colors whitespace-nowrap',
+              'pb-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors',
               selected === cat.attributes.slug
-                ? 'bg-[var(--accent)] text-white'
-                : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)]'
+                ? 'border-[var(--text)] text-[var(--text)]'
+                : 'border-transparent text-[var(--muted)] hover:text-[var(--text)]'
             )}
           >
             {cat.attributes.name}

@@ -1,16 +1,14 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import TechBar from '@/components/layout/TechBar'
 import ArticleBody from '@/components/article/ArticleBody'
 import PaywallGate from '@/components/article/PaywallGate'
 import AuthorBio from '@/components/article/AuthorBio'
+import ReadingProgress from '@/components/article/ReadingProgress'
 import ArticleCard from '@/components/reader/ArticleCard'
-import ArchCallout from '@/components/shared/ArchCallout'
-import RenderBadge from '@/components/shared/RenderBadge'
-import Badge from '@/components/ui/Badge'
+import AdSlot from '@/components/shared/AdSlot'
 import { getArticleBySlug, getRelatedArticles } from '@/lib/api/strapi'
-import { formatDate, getStrapiMediaUrl } from '@/lib/utils'
+import { formatDate, getArticleCoverUrl } from '@/lib/utils'
 
 export const revalidate = 60
 
@@ -52,6 +50,7 @@ export default async function ArticlePage({ params }: PageProps) {
 
   const { attributes: a } = article
   const categorySlug = a.category?.data?.attributes?.slug
+  const categoryName = a.category?.data?.attributes?.name
   const author = a.author?.data
 
   let related = null
@@ -65,98 +64,107 @@ export default async function ArticlePage({ params }: PageProps) {
 
   return (
     <>
-      <TechBar
-        badges={[
-          { label: 'ISR \u00b7 60s', tooltip: 'Revalidates every 60 seconds', variant: 'warning' },
-          { label: 'Cache-Control: s-maxage=60', tooltip: 'CDN caches for 60s' },
-          { label: 'Strapi REST', tooltip: 'Article fetched from Strapi v4' },
-        ]}
-      />
+      <ReadingProgress />
 
-      <article className="max-w-4xl mx-auto px-4 py-6 pb-20 md:pb-6">
+      {/* Full-bleed cover image */}
+      <div className="relative aspect-[2/1] sm:aspect-[5/2] lg:aspect-[3/1] bg-[var(--surface-2)] overflow-hidden">
+        <img
+          src={getArticleCoverUrl(a.cover?.data?.attributes?.url, slug, 1200, 800, a.coverUrl)}
+          alt={a.title}
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg)] via-transparent to-transparent" />
+      </div>
+
+      <article className="max-w-3xl mx-auto px-4 pb-20 md:pb-8 relative -mt-12 z-10">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-sm text-[var(--muted)] mb-4">
-          <Link href="/" className="hover:text-[var(--text)]">
+        <nav className="flex items-center gap-2 text-sm text-[var(--muted)] mb-6">
+          <Link href="/" className="hover:text-[var(--text)] transition-colors">
             Home
           </Link>
-          <span>&rsaquo;</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg>
           {a.category?.data && (
             <>
-              <span>{a.category.data.attributes.name}</span>
-              <span>&rsaquo;</span>
+              <span>{categoryName}</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg>
             </>
           )}
           <span className="text-[var(--text)] truncate">{a.title}</span>
         </nav>
 
-        {/* Render strategy toolbar */}
-        <div className="flex items-center gap-2 mb-4">
-          <RenderBadge strategy="ISR" />
-          <Badge>revalidate: 60s</Badge>
-          {a.premium && <Badge variant="warning">Premium</Badge>}
+        {/* Category label */}
+        <div className="flex items-center gap-2 mb-3">
+          {categoryName && <span className="section-label">{categoryName}</span>}
+          {a.premium && <span className="section-label text-amber-700 dark:text-amber-400">Premium</span>}
         </div>
 
-        {/* Cover image */}
-        {a.cover?.data && (
-          <div className="relative aspect-[2/1] rounded-lg overflow-hidden mb-6 bg-[var(--surface-2)]">
-            <img
-              src={getStrapiMediaUrl(a.cover.data.attributes.url)}
-              alt={a.title}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        )}
-
-        {/* Title and meta */}
-        <h1 className="text-3xl sm:text-4xl font-bold text-[var(--text)] mb-3">
+        {/* Title */}
+        <h1
+          className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold text-[var(--text)] mb-5 leading-tight tracking-tight"
+          style={{ fontFamily: 'var(--font-headline)' }}
+        >
           {a.title}
         </h1>
-        <div className="flex flex-wrap items-center gap-3 text-sm text-[var(--muted)] mb-6">
+
+        {/* Byline */}
+        <div className="flex flex-wrap items-center gap-3 text-sm text-[var(--muted)] mb-8 pb-6 border-b border-[var(--border)]">
           {author && (
             <span className="font-medium text-[var(--text)]">
-              {author.attributes.name}
+              By {author.attributes.name}
             </span>
           )}
           {a.publishedAt && <span>{formatDate(a.publishedAt)}</span>}
-          {a.readTime && <span>{a.readTime}</span>}
-          <span>{a.views} views</span>
+          {a.readTime && <span>· {a.readTime}</span>}
+          {a.views !== undefined && <span>· {a.views.toLocaleString()} views</span>}
         </div>
 
         {/* Article body */}
         <ArticleBody
           body={a.body}
           premium={a.premium}
-          hasAccess={!a.premium} // TODO: check user plan
+          hasAccess={!a.premium}
         />
 
         {/* Paywall gate for premium articles */}
         {a.premium && <PaywallGate />}
 
+        {/* In-article ad */}
+        <AdSlot position="in-article" className="mt-8" />
+
         {/* Share buttons */}
-        <div className="flex items-center gap-3 mt-8 pt-6 border-t border-[var(--border)]">
-          <span className="text-sm text-[var(--muted)]">Share:</span>
-          <button
-            className="h-9 px-3 rounded border border-[var(--border)] text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors"
-            onClick={() => {}}
-          >
-            Copy link
-          </button>
+        <div className="flex items-center gap-2 mt-10 pt-6 border-t border-[var(--border)]">
+          <span className="text-sm font-medium text-[var(--muted)] mr-1">Share</span>
           <a
             href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(a.title)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="h-9 px-3 rounded border border-[var(--border)] text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors flex items-center"
+            className="h-9 w-9 flex items-center justify-center rounded-lg border border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors"
+            aria-label="Share on X"
           >
-            Twitter/X
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
           </a>
           <a
             href={`https://wa.me/?text=${encodeURIComponent(a.title)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="h-9 px-3 rounded border border-[var(--border)] text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors flex items-center"
+            className="h-9 w-9 flex items-center justify-center rounded-lg border border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors"
+            aria-label="Share on WhatsApp"
           >
-            WhatsApp
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+            </svg>
           </a>
+          <button
+            className="h-9 w-9 flex items-center justify-center rounded-lg border border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors"
+            aria-label="Copy link"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+            </svg>
+          </button>
         </div>
 
         {/* Author bio */}
@@ -166,22 +174,14 @@ export default async function ArticlePage({ params }: PageProps) {
           </div>
         )}
 
-        {/* Architecture callout */}
-        <ArchCallout
-          apiCall={`GET /api/articles?filters[slug][$eq]=${slug}&populate=*`}
-          caching="ISR revalidate: 60s, on-demand via /api/revalidate webhook"
-          auth="Public read, premium content gated client-side"
-          rationale="ISR enables fast static delivery with near-real-time updates on publish."
-          className="mt-6"
-        />
-
         {/* Related articles */}
         {related && related.data.length > 0 && (
-          <section className="mt-10">
-            <h2 className="text-xl font-bold text-[var(--text)] mb-4">
-              Related Articles
-            </h2>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <section className="mt-12">
+            <div className="flex items-center gap-4 mb-6">
+              <h2 className="section-label whitespace-nowrap">Related Articles</h2>
+              <hr className="flex-1 border-t border-[var(--border)]" />
+            </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {related.data.map((ra) => (
                 <ArticleCard key={ra.id} article={ra} />
               ))}

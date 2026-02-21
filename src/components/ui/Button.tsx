@@ -27,9 +27,9 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={disabled || loading}
         className={cn(
-          'inline-flex items-center justify-center font-medium transition-colors duration-150 ease-in-out rounded focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed',
+          'inline-flex items-center justify-center font-medium transition-all duration-150 ease-in-out rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed',
           {
-            'bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] focus:ring-[var(--accent)]':
+            'bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] hover:scale-[1.02] focus-visible:ring-[var(--accent)]':
               variant === 'primary',
             'bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--surface-2)] border border-[var(--border)]':
               variant === 'secondary',
@@ -37,7 +37,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
               variant === 'outline',
             'text-[var(--text)] hover:bg-[var(--surface)] bg-transparent':
               variant === 'ghost',
-            'bg-[var(--danger)] text-white hover:opacity-90 focus:ring-[var(--danger)]':
+            'bg-[var(--danger)] text-white hover:opacity-90 focus-visible:ring-[var(--danger)]':
               variant === 'danger',
           },
           {

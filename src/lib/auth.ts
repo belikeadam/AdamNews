@@ -9,7 +9,7 @@ const DEMO_USERS = [
   {
     id: '1',
     email: 'admin@AdamNews.com',
-    password: '$2a$10$K7L1OJ45/4Y2nIvhRVpCe.FSmhDdWoXehVzJptJ/op0lSsvqNu.1u', // demo1234
+    password: '$2b$10$sMLXtuyuSLONdMQOKueYmOwHswp2n0xRtHFH0J4VGAhiSiwM6gWkm', // demo1234
     name: 'Admin User',
     role: 'admin' as UserRole,
     plan: 'premium' as UserPlan,
@@ -17,7 +17,7 @@ const DEMO_USERS = [
   {
     id: '2',
     email: 'reader@AdamNews.com',
-    password: '$2a$10$K7L1OJ45/4Y2nIvhRVpCe.FSmhDdWoXehVzJptJ/op0lSsvqNu.1u', // demo1234
+    password: '$2b$10$sMLXtuyuSLONdMQOKueYmOwHswp2n0xRtHFH0J4VGAhiSiwM6gWkm', // demo1234
     name: 'Reader User',
     role: 'user' as UserRole,
     plan: 'free' as UserPlan,

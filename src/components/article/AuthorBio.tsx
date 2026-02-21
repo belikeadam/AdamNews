@@ -1,6 +1,4 @@
-import Image from 'next/image'
 import Card, { CardContent } from '@/components/ui/Card'
-import { getStrapiMediaUrl } from '@/lib/utils'
 import type { AuthorAttributes, StrapiEntry } from '@/types'
 
 interface AuthorBioProps {
@@ -9,19 +7,20 @@ interface AuthorBioProps {
 
 export default function AuthorBio({ author }: AuthorBioProps) {
   const { attributes: a } = author
-  const avatarUrl = getStrapiMediaUrl(a.avatar?.data?.attributes?.url)
+  const initials = a.name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
 
   return (
     <Card>
       <CardContent className="flex items-start gap-4">
-        <div className="relative w-14 h-14 rounded-full overflow-hidden flex-shrink-0 bg-[var(--surface-2)]">
-          <Image
-            src={avatarUrl}
-            alt={a.name}
-            fill
-            className="object-cover"
-            sizes="56px"
-          />
+        <div className="w-14 h-14 rounded-full flex-shrink-0 bg-[var(--accent)] flex items-center justify-center">
+          <span className="text-white text-lg font-bold" style={{ fontFamily: 'var(--font-headline)' }}>
+            {initials}
+          </span>
         </div>
         <div>
           <h4 className="font-semibold text-[var(--text)]">{a.name}</h4>

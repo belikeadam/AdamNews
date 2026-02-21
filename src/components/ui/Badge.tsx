@@ -4,6 +4,7 @@ interface BadgeProps {
   children: React.ReactNode
   variant?: 'default' | 'accent' | 'success' | 'warning' | 'danger' | 'purple'
   size?: 'sm' | 'md'
+  pill?: boolean
   className?: string
 }
 
@@ -11,28 +12,33 @@ export default function Badge({
   children,
   variant = 'default',
   size = 'sm',
+  pill = false,
   className,
 }: BadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center font-medium rounded-sm',
+        'inline-flex items-center font-semibold uppercase tracking-wider',
+        pill
+          ? {
+              'bg-[var(--surface-2)] text-[var(--muted)] px-3 py-1 rounded-full': variant === 'default',
+              'bg-[var(--accent)] text-white px-3 py-1 rounded-full': variant === 'accent',
+              'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400 px-3 py-1 rounded-full': variant === 'success',
+              'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-400 px-3 py-1 rounded-full': variant === 'warning',
+              'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-400 px-3 py-1 rounded-full': variant === 'danger',
+              'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-400 px-3 py-1 rounded-full': variant === 'purple',
+            }
+          : {
+              'text-[var(--muted)]': variant === 'default',
+              'text-[var(--accent)]': variant === 'accent',
+              'text-green-700 dark:text-green-400': variant === 'success',
+              'text-amber-700 dark:text-amber-400': variant === 'warning',
+              'text-red-700 dark:text-red-400': variant === 'danger',
+              'text-purple-700 dark:text-purple-400': variant === 'purple',
+            },
         {
-          'bg-[var(--surface-2)] text-[var(--muted)]': variant === 'default',
-          'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400':
-            variant === 'accent',
-          'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400':
-            variant === 'success',
-          'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400':
-            variant === 'warning',
-          'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400':
-            variant === 'danger',
-          'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400':
-            variant === 'purple',
-        },
-        {
-          'px-1.5 py-0.5 text-xs': size === 'sm',
-          'px-2 py-1 text-sm': size === 'md',
+          'text-[0.65rem]': size === 'sm',
+          'text-xs': size === 'md',
         },
         className
       )}

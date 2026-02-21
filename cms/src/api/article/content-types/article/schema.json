@@ -62,6 +62,9 @@
     },
     "readTime": {
       "type": "string"
+    },
+    "coverUrl": {
+      "type": "string"
     }
   }
 }
