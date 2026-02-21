@@ -32,8 +32,9 @@ export async function POST(request: Request) {
   const cacheKey = `ai:digest:${catKey}:${dateHour}`
 
   try {
-    const articlesText = topArticles.slice(0, 8).map((a: { category: string; title: string; excerpt: string }, i: number) =>
-      `${i + 1}. [${a.category}] ${a.title}: ${a.excerpt.slice(0, 150)}`
+    const articles = topArticles.slice(0, 8)
+    const articlesText = articles.map((a: { category: string; title: string; excerpt: string; slug?: string }, i: number) =>
+      `${i + 1}. [${a.category}] "${a.title}" (slug: ${a.slug || 'unknown'}): ${a.excerpt.slice(0, 150)}`
     ).join('\n')
 
     const prompt = `You are a Malaysian news briefing editor. Create a morning digest for a reader who follows: ${categories.join(', ')}.
@@ -47,7 +48,8 @@ Respond ONLY with valid JSON (no markdown, no code fences):
   "intro": "2 sentence personalised morning intro with Malaysian context",
   "stories": [
     {
-      "title": "Article title",
+      "title": "Article title (use the exact title from the list)",
+      "slug": "the-article-slug (use the exact slug from the list)",
       "summary": "Why it matters in 20 words",
       "category": "category name",
       "urgency": "high|medium|low"

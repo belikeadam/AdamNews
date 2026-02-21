@@ -138,7 +138,7 @@ export default function PlansPage() {
                 <Card
                   hover
                   className={cn(
-                    'relative',
+                    'relative overflow-visible',
                     isCurrent
                       ? 'ring-2 ring-green-500 dark:ring-green-400'
                       : plan.highlight

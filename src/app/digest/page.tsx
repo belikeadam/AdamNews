@@ -162,12 +162,8 @@ export default function DigestPage() {
             <div className="space-y-3">
               {digest.stories?.map((story, i) => {
                 const urgency = URGENCY_CONFIG[story.urgency] || URGENCY_CONFIG.low
-                return (
-                  <div
-                    key={i}
-                    className="p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)]"
-                    style={{ borderLeftWidth: '3px', borderLeftColor: urgency.color }}
-                  >
+                const cardContent = (
+                  <>
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-[0.6rem] font-bold text-[var(--muted)] uppercase tracking-wide">
                         {story.category}
@@ -183,7 +179,7 @@ export default function DigestPage() {
                       </span>
                     </div>
                     <div
-                      className="text-sm font-semibold text-[var(--text)] mb-1"
+                      className="text-sm font-semibold text-[var(--text)] mb-1 group-hover:text-[var(--accent)] transition-colors"
                       style={{ fontFamily: 'var(--font-headline)' }}
                     >
                       {story.title}
@@ -191,6 +187,25 @@ export default function DigestPage() {
                     <div className="text-xs text-[var(--muted)] leading-relaxed">
                       {story.summary}
                     </div>
+                  </>
+                )
+
+                return story.slug ? (
+                  <Link
+                    key={i}
+                    href={`/articles/${story.slug}`}
+                    className="group block p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)] hover:bg-[var(--surface-2)] transition-colors"
+                    style={{ borderLeftWidth: '3px', borderLeftColor: urgency.color }}
+                  >
+                    {cardContent}
+                  </Link>
+                ) : (
+                  <div
+                    key={i}
+                    className="p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)]"
+                    style={{ borderLeftWidth: '3px', borderLeftColor: urgency.color }}
+                  >
+                    {cardContent}
                   </div>
                 )
               })}
