@@ -22,6 +22,8 @@ function getGreeting(): string {
   return 'Good evening'
 }
 
+type FeedDensity = 'comfortable' | 'compact'
+
 export default function HomeClient({
   articles,
   trending,
@@ -30,10 +32,21 @@ export default function HomeClient({
   const { user, isAuthenticated } = useAuth()
   // Sync with URL — initialCategory changes on server navigation
   const [selectedCategory, setSelectedCategory] = useState<string | null>(initialCategory)
+  const [density, setDensity] = useState<FeedDensity>('comfortable')
 
   useEffect(() => {
     setSelectedCategory(initialCategory)
   }, [initialCategory])
+
+  useEffect(() => {
+    const stored = localStorage.getItem('feedDensity') as FeedDensity | null
+    if (stored === 'comfortable' || stored === 'compact') setDensity(stored)
+  }, [])
+
+  const toggleDensity = (d: FeedDensity) => {
+    setDensity(d)
+    localStorage.setItem('feedDensity', d)
+  }
 
   const filtered = selectedCategory
     ? articles.filter(
@@ -181,18 +194,50 @@ export default function HomeClient({
           {/* Mid-page ad */}
           <AdSlot position="banner" className="mt-8" />
 
-          {/* Category sections */}
+          {/* Category sections with density toggle */}
+          {categoryGroups.size > 0 && (
+            <div className="flex items-center justify-between mt-10 mb-2">
+              <span className="text-xs text-[var(--muted)] uppercase tracking-wider font-medium">More Stories</span>
+              <div className="flex items-center gap-1 bg-[var(--surface)] rounded p-0.5">
+                <button
+                  onClick={() => toggleDensity('comfortable')}
+                  className={`p-1.5 rounded transition-colors ${density === 'comfortable' ? 'bg-[var(--bg)] text-[var(--text)] shadow-sm' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
+                  aria-label="Comfortable view"
+                  title="Comfortable"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                </button>
+                <button
+                  onClick={() => toggleDensity('compact')}
+                  className={`p-1.5 rounded transition-colors ${density === 'compact' ? 'bg-[var(--bg)] text-[var(--text)] shadow-sm' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
+                  aria-label="Compact view"
+                  title="Compact"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                </button>
+              </div>
+            </div>
+          )}
+
           {Array.from(categoryGroups).map(([catName, catArticles]) => (
-            <section key={catName} className="mt-10">
+            <section key={catName} className="mt-8">
               <div className="flex items-center gap-4 mb-6">
                 <h2 className="section-label whitespace-nowrap">{catName}</h2>
                 <hr className="flex-1 border-t border-[var(--border)]" />
               </div>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {catArticles.slice(0, 3).map((a) => (
-                  <ArticleCard key={a.id} article={a} />
-                ))}
-              </div>
+              {density === 'compact' ? (
+                <div className="space-y-0 divide-y divide-[var(--border)]">
+                  {catArticles.slice(0, 6).map((a) => (
+                    <ArticleCard key={a.id} article={a} variant="horizontal" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-stagger">
+                  {catArticles.slice(0, 3).map((a) => (
+                    <ArticleCard key={a.id} article={a} />
+                  ))}
+                </div>
+              )}
             </section>
           ))}
         </>

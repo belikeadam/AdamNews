@@ -99,13 +99,16 @@ export default function ArticleCard({ article, variant = 'default' }: ArticleCar
 
   if (variant === 'horizontal') {
     return (
-      <Link href={`/articles/${a.slug}`} className="group flex gap-4">
-        <div className="relative w-28 h-20 flex-shrink-0 overflow-hidden bg-[var(--surface-2)]">
+      <Link href={`/articles/${a.slug}`} className="group flex gap-4 py-4">
+        <div className="relative w-24 h-16 sm:w-28 sm:h-20 flex-shrink-0 overflow-hidden bg-[var(--surface-2)]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={coverUrl} alt={a.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
         </div>
         <div className="flex-1 min-w-0">
-          {categoryName && <span className="section-label">{categoryName}</span>}
+          <div className="flex items-center gap-2">
+            {categoryName && <span className="section-label">{categoryName}</span>}
+            {a.readTime && <span className="text-[0.65rem] text-[var(--muted)]">{a.readTime}</span>}
+          </div>
           <h3 className="headline-md text-base line-clamp-2 mt-0.5 group-hover:text-[var(--accent)] transition-colors">
             {a.title}
           </h3>
