@@ -96,6 +96,7 @@ const API_ROUTES = [
   { method: 'POST', path: '/api/stripe/webhook', auth: 'Stripe signature', purpose: 'Subscription lifecycle' },
   { method: 'POST', path: '/api/articles/[slug]/views', auth: 'Public', purpose: 'View counter increment' },
   { method: 'POST', path: '/api/analytics', auth: 'Public', purpose: 'Scroll depth / read time beacon' },
+  { method: 'GET', path: '/api/health', auth: 'Public', purpose: 'System health + dependency checks' },
 ]
 
 const KEY_PATTERNS = [
@@ -118,6 +119,16 @@ const KEY_PATTERNS = [
     title: 'Cache-Aside with Upstash Redis',
     desc: 'API responses are cached in Redis with TTL. Cache miss → fetch from Strapi → store in Redis. Webhook-triggered revalidation also invalidates Redis keys.',
     code: 'const cached = await redis.get(key) ?? await fetchAndCache(key)',
+  },
+  {
+    title: 'Rate Limiting (Token Bucket)',
+    desc: 'All API routes are rate-limited via Upstash Redis using a sliding-window token bucket. Fails open on Redis unavailability. Returns standard rate limit headers.',
+    code: 'const rl = await rateLimit(`checkout:${ip}`, { limit: 10, windowSeconds: 60 })',
+  },
+  {
+    title: 'Input Validation with Zod',
+    desc: 'All API request bodies are validated against Zod schemas. Type-safe parsing with descriptive error messages. Schemas: CheckoutSchema, RevalidateSchema, AnalyticsSchema.',
+    code: 'const { data, error } = await parseBody(request, CheckoutSchema)',
   },
 ]
 

@@ -57,13 +57,16 @@ The Adam News is a full-stack digital newspaper platform that demonstrates end-t
 
 ### Key Metrics
 
-- **12 articles** seeded with real tech news content
-- **4 categories** (Technology, Business, Finance, Lifestyle)
-- **3 authors** with profiles and avatars
+- **67 articles** seeded with real tech news content (via Dev.to API)
+- **6 categories** (Technology, Business, Finance, Lifestyle, Science, General)
+- **40+ authors** with profiles and avatars
 - **41 tests** passing across 3 test suites
-- **18 URLs** in sitemap (6 static + 12 dynamic)
-- **8 API routes** (3 GET, 5 POST)
+- **73+ URLs** in sitemap (6 static + 67 dynamic)
+- **9 API routes** (4 GET, 5 POST) — including health check endpoint
 - **3 subscription plans** (Free, Standard RM9.99/mo, Premium RM19.99/mo)
+- **Rate limiting** on all API routes via Upstash Redis (token bucket)
+- **Input validation** on all API routes via Zod schemas
+- **Structured logging** for production monitoring (JSON format)
 
 ---
 
@@ -460,6 +463,30 @@ async function getCached<T>(key, fetcher, ttlSeconds = 60) {
 
 On Redis failure: silently falls through to direct Strapi fetch. No error thrown.
 
+### Rate Limiting (Token Bucket via Redis)
+
+```typescript
+// src/lib/rate-limit.ts
+async function rateLimit(identifier, { limit = 60, windowSeconds = 60 }) {
+  const windowId = Math.floor(Date.now() / (windowSeconds * 1000))
+  const key = `rl:${identifier}:${windowId}`
+  const count = await redis.incr(key)
+  if (count === 1) await redis.expire(key, windowSeconds)
+  return { allowed: count <= limit, remaining: Math.max(0, limit - count) }
+}
+```
+
+| Endpoint | Limit | Window | Strategy |
+|----------|-------|--------|----------|
+| `/api/stripe/checkout` | 10 req | 60s | Per IP — prevents checkout abuse |
+| `/api/stripe/webhook` | 100 req | 60s | Per IP — accommodates Stripe batching |
+| `/api/articles/[slug]/views` | 5 req | 60s | Per IP+slug — prevents view inflation |
+| `/api/revalidate` | 30 req | 60s | Per IP — protects cache invalidation |
+| `/api/analytics` | 30 req | 60s | Per IP — prevents event flooding |
+
+On Redis failure: **fail-open** (allows request through). Rate limit headers included in all responses:
+`X-RateLimit-Limit`, `X-RateLimit-Remaining`, `Retry-After` (on 429).
+
 ### Cache Key Structure
 
 | Key Pattern | TTL | Data |
@@ -507,7 +534,14 @@ These are Strapi REST endpoints exposed through the CMS:
 | `POST` | `/api/stripe/webhook` | Stripe signature | Handle subscription lifecycle events |
 | `POST` | `/api/articles/[slug]/views` | Public | Increment article view counter |
 | `POST` | `/api/analytics` | Public | Track scroll depth and read time |
+| `GET` | `/api/health` | Public | System health check (Strapi + Redis status) |
 | `GET/POST` | `/api/auth/[...nextauth]` | NextAuth | Authentication endpoints (CSRF, session, callback, signout) |
+
+**All POST routes** include:
+- **Rate limiting** via Upstash Redis (token bucket algorithm, fail-open)
+- **Input validation** via Zod schemas (type-safe request parsing)
+- **Structured logging** via JSON logger (production-ready for ELK/Datadog/CloudWatch)
+- **Rate limit headers**: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `Retry-After`
 
 ### GraphQL (Available but not primary)
 
@@ -962,6 +996,9 @@ AdamNews/
 - `/api/stripe/webhook` — protected by Stripe HMAC signature verification (`stripe-signature` header)
 - `/api/stripe/checkout` — protected by NextAuth middleware (requires authenticated session)
 - Dashboard routes — middleware enforces `role === 'admin'`
+- **Rate limiting** — All API routes protected by token bucket rate limiter via Upstash Redis
+- **Input validation** — All API routes validate request bodies with Zod schemas (type-safe, with descriptive error messages)
+- **Structured logging** — All API requests logged with timing, status, and metadata in structured JSON format
 
 ### Frontend Security
 
@@ -1031,8 +1068,8 @@ AdamNews/
 6. **Push notifications** — Breaking news alerts via service worker
 7. **i18n** — Multi-language support (Strapi supports this natively)
 8. **A/B testing** — Headline testing, layout experiments
-9. **Rate limiting** — Redis-based API rate limiting (foundation exists)
-10. **Monitoring** — Error tracking (Sentry), uptime monitoring
+9. ~~**Rate limiting**~~ — ✅ Implemented (token bucket via Upstash Redis on all API routes)
+10. ~~**Monitoring**~~ — ✅ Implemented (structured JSON logging + `/api/health` endpoint; Sentry/PostHog can be added)
 
 ---
 

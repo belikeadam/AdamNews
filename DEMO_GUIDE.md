@@ -37,11 +37,12 @@
 
 1. Go to https://adam-news.vercel.app/login
 2. Click **"Reader Demo"** (one-click login)
-3. Browse homepage — carousel, categories, trending articles
-4. Click any article — read full content, see engagement metrics
-5. Toggle dark mode (top-right moon icon)
-6. Visit `/account` — see "Reader (Free)" plan, "Upgrade" button
-7. Visit `/saved` — bookmark an article, verify it appears
+3. Browse homepage — lead article, category sections, trending sidebar
+4. Click a category in the navbar — page scrolls to filtered view with category header
+5. Click any article — read full content, see engagement metrics
+6. Toggle dark mode (top-right moon icon)
+7. Visit `/account` — see "Reader (Free)" plan, "Upgrade" button
+8. Visit `/saved` — bookmark an article, verify it appears
 
 ### 2. Subscription Upgrade (Stripe)
 
@@ -61,7 +62,7 @@
 1. Log in as **Admin** (or click "Admin Demo")
 2. Click **"Dashboard"** in top-right utility bar
 3. View analytics overview, subscriber stats
-4. Go to **Dashboard → Posts** — see all 12 articles
+4. Go to **Dashboard → Posts** — see all 67 articles across 6 categories
 5. Click **Edit** on any article → edit title/excerpt/body in rich editor
 6. Save → Strapi updates + ISR revalidation triggers automatically
 
@@ -77,9 +78,20 @@
 ### 5. API Playground
 
 1. Visit https://adam-news.vercel.app/api-docs
-2. Click **"Try it"** on any GET endpoint (articles, categories, authors)
+2. Click **"Try it"** on any GET endpoint (articles, categories, authors, **health**)
 3. See live JSON response with latency metrics
 4. Review POST endpoints documentation (revalidate, checkout, webhook)
+
+### 6. Health Check & Monitoring
+
+1. Visit `/api/health` — see JSON response with:
+   - Overall system status (`healthy` / `degraded`)
+   - Strapi CMS status + latency
+   - Upstash Redis status + latency
+   - Server uptime
+2. All API routes return rate limit headers:
+   - `X-RateLimit-Limit` — max requests allowed
+   - `X-RateLimit-Remaining` — requests left in window
 
 ---
 
@@ -89,14 +101,22 @@
 |---------|---------------|
 | Responsive design | Resize browser or use mobile device |
 | Dark mode | Moon icon in top-right utility bar |
+| Category colors | Each category has distinct color (blue, green, purple, etc.) |
+| Category filtering | Click category in navbar → smooth scroll to filtered view |
 | SEO metadata | View page source on any article |
 | Sitemap | https://adam-news.vercel.app/sitemap.xml |
 | 404 page | https://adam-news.vercel.app/nonexistent |
 | Paywall | Premium articles gated for free users |
-| Search | `/search` — full-text search with filters |
+| Search | `/search` — full-text search with category chips, sort tabs |
 | Bookmarks | Save icon on any article card |
 | View counter | Article pages show view count |
 | Read time | Calculated automatically per article |
+| Health check | `/api/health` — service dependency status |
+| Rate limiting | All API routes return `X-RateLimit-*` headers |
+| Input validation | POST invalid JSON to `/api/analytics` — graceful handling |
+| Reading progress | Colored progress bar at top of article pages |
+| Emoji reactions | React to articles with emoji (below byline) |
+| Share buttons | X, WhatsApp, Telegram, LinkedIn, Copy link on articles |
 
 ---
 
@@ -106,10 +126,13 @@
 |-------|-----------|
 | Frontend | Next.js 16 (App Router), React 19, TypeScript |
 | Styling | Tailwind CSS v4, CSS variables, dark mode |
-| CMS | Strapi v4 (headless), REST API |
+| CMS | Strapi v4 (headless), REST API, 6 categories, 67 articles |
 | Auth | NextAuth v5 (JWT sessions, Credentials + Google OAuth) |
 | Payments | Stripe Checkout (subscriptions, webhooks) |
-| Hosting | Vercel (frontend), Railway (Strapi) |
+| Cache | Upstash Redis (cache-aside, rate limiting) |
+| Validation | Zod schemas on all API routes |
+| Monitoring | Structured JSON logger + `/api/health` endpoint |
+| Hosting | Vercel (frontend), Railway (Strapi + PostgreSQL) |
 | Testing | Vitest (41 tests passing) |
 | CI/CD | GitHub Actions → Vercel auto-deploy |
 

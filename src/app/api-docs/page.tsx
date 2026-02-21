@@ -52,6 +52,16 @@ const ENDPOINTS = [
     tryUrl: `${STRAPI_BASE}/api/authors?populate=*`,
   },
   {
+    id: 'health',
+    method: 'GET',
+    path: '/api/health',
+    description: 'System health check. Returns status of all service dependencies (Strapi CMS, Upstash Redis) with latency measurements. Returns 200 when healthy, 503 when degraded.',
+    auth: 'Public',
+    params: [],
+    curl: `curl "/api/health"`,
+    tryUrl: '/api/health',
+  },
+  {
     id: 'checkout',
     method: 'POST',
     path: '/api/stripe/checkout',
@@ -102,7 +112,7 @@ const ENDPOINTS = [
     description: 'Track reader engagement metrics (scroll depth, read time). Fires as a beacon when the user leaves the article page.',
     auth: 'Public',
     params: [
-      { name: 'type', type: 'string', required: true, description: 'Event type, e.g. "article_read"' },
+      { name: 'type', type: 'string', required: true, description: 'Event type: "pageview" | "scroll" | "read_complete" | "engagement"' },
       { name: 'slug', type: 'string', required: true, description: 'Article slug' },
       { name: 'readSeconds', type: 'number', required: false, description: 'Time spent reading in seconds' },
       { name: 'maxScrollDepth', type: 'number', required: false, description: 'Maximum scroll percentage (0–100)' },

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { constructWebhookEvent } from '@/lib/api/stripe'
+import { rateLimit, getClientIp, rateLimitHeaders } from '@/lib/rate-limit'
+import { logger } from '@/lib/logger'
 import type Stripe from 'stripe'
 
 /**
@@ -26,12 +28,26 @@ function getPlanFromPriceId(priceId: string): 'standard' | 'premium' | null {
 }
 
 export async function POST(request: Request) {
+  const start = Date.now()
+  const ip = getClientIp(request)
+
+  // Rate limit: 100 webhook calls per minute (Stripe can batch)
+  const rl = await rateLimit(`webhook:${ip}`, { limit: 100, windowSeconds: 60 })
+  if (!rl.allowed) {
+    logger.warn('Rate limit exceeded on Stripe webhook', { ip })
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      { status: 429, headers: rateLimitHeaders(rl) }
+    )
+  }
+
   // CRITICAL: use text() not json() for signature verification
   const body = await request.text()
   const headersList = await headers()
   const signature = headersList.get('stripe-signature')
 
   if (!signature) {
+    logger.warn('Missing stripe-signature header', { ip })
     return NextResponse.json(
       { error: 'Missing stripe-signature header' },
       { status: 400 }
@@ -42,7 +58,7 @@ export async function POST(request: Request) {
   try {
     event = constructWebhookEvent(body, signature)
   } catch (error) {
-    console.error('Webhook signature verification failed:', error)
+    logger.error('Webhook signature verification failed', { error: (error as Error).message, ip })
     return NextResponse.json(
       { error: 'Invalid signature' },
       { status: 400 }
@@ -56,17 +72,11 @@ export async function POST(request: Request) {
         const userId = session.metadata?.userId
         const subscriptionId = session.subscription as string
 
-        console.log(
-          `[Stripe] Checkout completed — user: ${userId}, subscription: ${subscriptionId}`
-        )
+        logger.info('Checkout completed', { userId, subscriptionId, eventId: event.id })
 
-        // Resolve which plan was purchased from the line items
         if (session.line_items?.data?.[0]?.price?.id) {
           const plan = getPlanFromPriceId(session.line_items.data[0].price.id)
-          console.log(`[Stripe] User ${userId} subscribed to: ${plan}`)
-
-          // In production, update the user record in your database:
-          // await db.user.update({ where: { id: userId }, data: { plan, stripeSubscriptionId: subscriptionId } })
+          logger.info('User subscribed', { userId, plan })
         }
         break
       }
@@ -78,16 +88,10 @@ export async function POST(request: Request) {
         const priceId = subscription.items.data[0]?.price?.id
         const plan = priceId ? getPlanFromPriceId(priceId) : null
 
-        console.log(
-          `[Stripe] Subscription updated — user: ${userId}, status: ${status}, plan: ${plan}`
-        )
+        logger.info('Subscription updated', { userId, status, plan, eventId: event.id })
 
-        if (status === 'active' && plan) {
-          // User upgraded/changed plan
-          // await db.user.update({ where: { id: userId }, data: { plan } })
-        } else if (status === 'past_due' || status === 'unpaid') {
-          // Payment issue — optionally restrict access
-          console.warn(`[Stripe] Subscription ${subscription.id} is ${status}`)
+        if (status === 'past_due' || status === 'unpaid') {
+          logger.warn('Subscription payment issue', { subscriptionId: subscription.id, status })
         }
         break
       }
@@ -95,11 +99,7 @@ export async function POST(request: Request) {
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription
         const userId = subscription.metadata?.userId
-
-        console.log(`[Stripe] Subscription cancelled — user: ${userId}`)
-
-        // Downgrade user to free plan
-        // await db.user.update({ where: { id: userId }, data: { plan: 'free', stripeSubscriptionId: null } })
+        logger.info('Subscription cancelled', { userId, eventId: event.id })
         break
       }
 
@@ -107,26 +107,22 @@ export async function POST(request: Request) {
         const invoice = event.data.object as Stripe.Invoice
         const subscriptionId = (invoice as Stripe.Invoice & { subscription?: string }).subscription
         const customerEmail = invoice.customer_email
-
-        console.warn(
-          `[Stripe] Payment failed — subscription: ${subscriptionId}, email: ${customerEmail}`
-        )
-
-        // Notify user via email or in-app notification
-        // await sendPaymentFailedEmail(customerEmail)
+        logger.warn('Payment failed', { subscriptionId, customerEmail, eventId: event.id })
         break
       }
 
       default:
-        console.log(`[Stripe] Unhandled event: ${event.type}`)
+        logger.info('Unhandled Stripe event', { type: event.type, eventId: event.id })
     }
   } catch (error) {
-    console.error('Webhook handler error:', error)
+    logger.error('Webhook handler error', { error: (error as Error).message, eventType: event.type })
     return NextResponse.json(
       { error: 'Webhook handler failed' },
       { status: 500 }
     )
   }
+
+  logger.request('POST', '/api/stripe/webhook', 200, Date.now() - start, { eventType: event.type })
 
   return NextResponse.json({ received: true })
 }

@@ -1,33 +1,51 @@
 import { NextResponse } from 'next/server'
 import { revalidatePath, revalidateTag } from 'next/cache'
+import { rateLimit, getClientIp, rateLimitHeaders } from '@/lib/rate-limit'
+import { RevalidateSchema, parseBody } from '@/lib/validations'
+import { logger } from '@/lib/logger'
 
 const WEBHOOK_SECRET =
   process.env.STRAPI_WEBHOOK_SECRET || process.env.STRAPI_API_TOKEN
 
 export async function POST(request: Request) {
+  const start = Date.now()
+  const ip = getClientIp(request)
+
+  // Rate limit: 30 revalidations per minute
+  const rl = await rateLimit(`revalidate:${ip}`, { limit: 30, windowSeconds: 60 })
+  if (!rl.allowed) {
+    logger.warn('Rate limit exceeded on revalidate', { ip })
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      { status: 429, headers: rateLimitHeaders(rl) }
+    )
+  }
+
   // Verify webhook secret
   const secret = request.headers.get('x-webhook-secret')
   if (secret !== WEBHOOK_SECRET) {
+    logger.warn('Invalid webhook secret on revalidate', { ip })
     return NextResponse.json({ error: 'Invalid secret' }, { status: 401 })
   }
 
-  try {
-    const body = await request.json()
+  // Validate body with Zod
+  const parsed = await parseBody(request, RevalidateSchema)
+  if (parsed.error !== null) {
+    logger.warn('Invalid revalidate input', { ip, error: parsed.error })
+    return NextResponse.json({ error: parsed.error }, { status: 400 })
+  }
+  const body = parsed.data
 
-    // Support both direct calls { slug, tag } and Strapi webhook format { event, model, entry }
+  try {
     let slug: string | null = null
     let tag: string | null = null
 
     if (body.slug) {
-      // Direct call format (from dashboard editor)
       slug = body.slug
       tag = body.tag || null
     } else if (body.entry?.slug) {
-      // Strapi lifecycle webhook format
-      // event: "entry.create" | "entry.update" | "entry.delete" | "entry.publish" | "entry.unpublish"
       slug = body.entry.slug
     } else if (body.model === 'category' || body.model === 'author') {
-      // Category or author changes — revalidate everything
       tag = body.model === 'category' ? 'categories' : 'authors'
     }
 
@@ -44,18 +62,20 @@ export async function POST(request: Request) {
     revalidatePath('/', 'page')
     revalidateTag('articles', 'default')
 
-    console.log(
-      `[Revalidate] slug=${slug || '-'}, tag=${tag || '-'}, event=${body.event || 'manual'}`
-    )
+    logger.request('POST', '/api/revalidate', 200, Date.now() - start, {
+      slug: slug || null,
+      tag: tag || null,
+      event: body.event || 'manual',
+    })
 
     return NextResponse.json({
       revalidated: true,
       slug: slug || null,
       tag: tag || null,
       timestamp: new Date().toISOString(),
-    })
+    }, { headers: rateLimitHeaders(rl) })
   } catch (error) {
-    console.error('Revalidation error:', error)
+    logger.error('Revalidation failed', { error: (error as Error).message })
     return NextResponse.json(
       { error: 'Revalidation failed' },
       { status: 500 }

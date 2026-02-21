@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { createCheckoutSession } from '@/lib/api/stripe'
+import { rateLimit, getClientIp, rateLimitHeaders } from '@/lib/rate-limit'
+import { CheckoutSchema, parseBody } from '@/lib/validations'
+import { logger } from '@/lib/logger'
 
 const PRICE_IDS: Record<string, Record<string, string | undefined>> = {
   standard: {
@@ -14,18 +17,31 @@ const PRICE_IDS: Record<string, Record<string, string | undefined>> = {
 }
 
 export async function POST(request: Request) {
+  const start = Date.now()
+  const ip = getClientIp(request)
+
+  // Rate limit: 10 checkout attempts per minute per IP
+  const rl = await rateLimit(`checkout:${ip}`, { limit: 10, windowSeconds: 60 })
+  if (!rl.allowed) {
+    logger.warn('Rate limit exceeded on checkout', { ip })
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429, headers: rateLimitHeaders(rl) }
+    )
+  }
+
   const session = await auth()
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { planId, billing } = (await request.json()) as { planId: string; billing: string }
-  if (!planId || !billing) {
-    return NextResponse.json(
-      { error: 'planId and billing are required' },
-      { status: 400 }
-    )
+  // Validate input with Zod
+  const parsed = await parseBody(request, CheckoutSchema)
+  if (parsed.error !== null) {
+    logger.warn('Invalid checkout input', { ip, error: parsed.error })
+    return NextResponse.json({ error: parsed.error }, { status: 400 })
   }
+  const { planId, billing } = parsed.data
 
   const priceId = PRICE_IDS[planId]?.[billing]
   if (!priceId) {
@@ -45,9 +61,19 @@ export async function POST(request: Request) {
       origin,
     })
 
-    return NextResponse.json({ url })
+    logger.request('POST', '/api/stripe/checkout', 200, Date.now() - start, {
+      userId: session.user.id,
+      planId,
+      billing,
+    })
+
+    return NextResponse.json({ url }, { headers: rateLimitHeaders(rl) })
   } catch (error) {
-    console.error('Checkout error:', error)
+    logger.error('Checkout session creation failed', {
+      error: (error as Error).message,
+      userId: session.user.id,
+      planId,
+    })
     return NextResponse.json(
       { error: 'Failed to create checkout session' },
       { status: 500 }
