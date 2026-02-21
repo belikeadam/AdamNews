@@ -129,10 +129,15 @@ export default function ArticleBody({
     }
   }
 
+  // Check if excerpt duplicates the body content
+  const bodyPlainText = htmlContent.replace(/<[^>]*>/g, '').trim()
+  const excerptText = (excerpt || '').trim()
+  const excerptIsDuplicate = !excerptText || bodyPlainText.startsWith(excerptText.slice(0, 40))
+
   return (
     <div className="relative">
-      {/* Lead excerpt for short articles */}
-      {isShortContent && excerpt && (
+      {/* Lead excerpt only if different from body */}
+      {!excerptIsDuplicate && (
         <p className="text-xl leading-relaxed text-[var(--muted)] mb-6 italic border-l-4 border-[var(--accent)] pl-4">
           {excerpt}
         </p>
