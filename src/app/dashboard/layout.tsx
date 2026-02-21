@@ -22,9 +22,9 @@ export default function DashboardLayout({
         />
       </div>
       <DashboardMobileNav />
-      <div className="flex flex-1">
+      <div className="flex flex-1 min-h-0">
         <Sidebar />
-        <div className="flex-1 p-4 md:p-6 overflow-auto">{children}</div>
+        <main className="flex-1 min-w-0 p-4 md:p-6 overflow-auto">{children}</main>
       </div>
       <DashboardFAB />
     </>

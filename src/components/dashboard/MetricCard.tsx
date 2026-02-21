@@ -20,12 +20,12 @@ export default function MetricCard({
     <Card>
       <CardContent>
         <p className="text-sm text-[var(--muted)] mb-1">{title}</p>
-        <div className="flex items-end justify-between">
-          <div>
+        <div className="flex items-end justify-between gap-2">
+          <div className="min-w-0 flex-1">
             <p className="text-xl sm:text-2xl font-bold text-[var(--text)] truncate">{value}</p>
             {change && (
               <p
-                className={cn('text-xs font-medium mt-1', {
+                className={cn('text-xs font-medium mt-1 truncate', {
                   'text-[var(--success)]': trend === 'up',
                   'text-[var(--danger)]': trend === 'down',
                   'text-[var(--muted)]': trend === 'neutral',
@@ -38,12 +38,12 @@ export default function MetricCard({
             )}
           </div>
           {sparkline && (
-            <div className="flex items-end gap-0.5 h-8">
+            <div className="flex items-end gap-0.5 h-8 shrink-0">
               {sparkline.map((v, i) => (
                 <div
                   key={i}
                   className={cn(
-                    'w-1.5 rounded-sm',
+                    'w-1 sm:w-1.5 rounded-sm',
                     trend === 'up'
                       ? 'bg-[var(--success)]'
                       : trend === 'down'

@@ -28,8 +28,8 @@ export default function BarChart({
       {horizontal ? (
         <div className="space-y-2">
           {data.map((item) => (
-            <div key={item.label} className="flex items-center gap-3">
-              <span className="text-xs text-[var(--muted)] w-20 text-right shrink-0">
+            <div key={item.label} className="flex items-center gap-2 sm:gap-3">
+              <span className="text-xs text-[var(--muted)] w-16 sm:w-20 text-right shrink-0 truncate">
                 {item.label}
               </span>
               <div className="flex-1 h-6 bg-[var(--surface-2)] rounded overflow-hidden">
@@ -48,25 +48,27 @@ export default function BarChart({
           ))}
         </div>
       ) : (
-        <div className="flex items-end gap-1.5 h-40">
-          {data.map((item) => (
-            <div
-              key={item.label}
-              className="flex-1 flex flex-col items-center gap-1"
-            >
+        <div className="overflow-x-auto">
+          <div className="flex items-end gap-1 sm:gap-1.5 h-40" style={{ minWidth: data.length > 10 ? `${data.length * 28}px` : undefined }}>
+            {data.map((item) => (
               <div
-                className={cn('w-full rounded-t transition-all duration-300')}
-                style={{
-                  height: `${(item.value / maxValue) * 100}%`,
-                  backgroundColor: color,
-                }}
-                title={`${item.label}: ${item.value}`}
-              />
-              <span className="text-[10px] text-[var(--muted)] truncate w-full text-center">
-                {item.label}
-              </span>
-            </div>
-          ))}
+                key={item.label}
+                className="flex-1 flex flex-col items-center gap-1 min-w-0"
+              >
+                <div
+                  className={cn('w-full rounded-t transition-all duration-300')}
+                  style={{
+                    height: `${(item.value / maxValue) * 100}%`,
+                    backgroundColor: color,
+                  }}
+                  title={`${item.label}: ${item.value}`}
+                />
+                <span className="text-[9px] sm:text-[10px] text-[var(--muted)] truncate w-full text-center">
+                  {item.label}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

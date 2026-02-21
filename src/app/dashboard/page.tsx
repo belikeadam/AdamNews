@@ -24,10 +24,10 @@ const TOP_PAGES = [
 export default function DashboardOverview() {
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-[var(--text)]">Overview</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-[var(--text)]">Overview</h1>
 
       {/* Metric cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <MetricCard
           title="Total Articles"
           value="48"
@@ -122,39 +122,41 @@ export default function DashboardOverview() {
             </h2>
           </CardHeader>
           <CardContent>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[var(--border)]">
-                  <th className="pb-2 text-left font-medium text-[var(--muted)]">
-                    Path
-                  </th>
-                  <th className="pb-2 text-right font-medium text-[var(--muted)]">
-                    Views
-                  </th>
-                  <th className="pb-2 text-right font-medium text-[var(--muted)]">
-                    Bounce
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {TOP_PAGES.map((page) => (
-                  <tr
-                    key={page.path}
-                    className="border-b border-[var(--border)]"
-                  >
-                    <td className="py-2 text-[var(--text)] font-mono text-xs">
-                      {page.path}
-                    </td>
-                    <td className="py-2 text-right text-[var(--muted)]">
-                      {page.views.toLocaleString()}
-                    </td>
-                    <td className="py-2 text-right text-[var(--muted)]">
-                      {page.bounce}
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--border)]">
+                    <th className="pb-2 text-left font-medium text-[var(--muted)]">
+                      Path
+                    </th>
+                    <th className="pb-2 text-right font-medium text-[var(--muted)] whitespace-nowrap">
+                      Views
+                    </th>
+                    <th className="pb-2 text-right font-medium text-[var(--muted)] whitespace-nowrap">
+                      Bounce
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {TOP_PAGES.map((page) => (
+                    <tr
+                      key={page.path}
+                      className="border-b border-[var(--border)]"
+                    >
+                      <td className="py-2 text-[var(--text)] font-mono text-xs max-w-[200px] truncate">
+                        {page.path}
+                      </td>
+                      <td className="py-2 text-right text-[var(--muted)] whitespace-nowrap">
+                        {page.views.toLocaleString()}
+                      </td>
+                      <td className="py-2 text-right text-[var(--muted)] whitespace-nowrap">
+                        {page.bounce}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </CardContent>
         </Card>
 

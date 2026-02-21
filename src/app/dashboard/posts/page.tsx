@@ -70,24 +70,24 @@ export default function PostsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[var(--text)]">Posts</h1>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-[var(--text)]">Posts</h1>
           <p className="text-sm text-[var(--muted)] mt-0.5">{posts.length} articles total</p>
         </div>
-        <Link href="/dashboard/posts/new/edit">
+        <Link href="/dashboard/posts/new/edit" className="shrink-0">
           <Button>+ New Post</Button>
         </Link>
       </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-1 border-b border-[var(--border)]">
+      <div className="flex gap-1 border-b border-[var(--border)] overflow-x-auto">
         {TABS.map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={cn(
-              'px-4 h-10 text-sm font-medium border-b-2 transition-colors',
+              'px-3 sm:px-4 h-10 text-sm font-medium border-b-2 transition-colors whitespace-nowrap',
               activeTab === tab
                 ? 'border-[var(--accent)] text-[var(--accent)]'
                 : 'border-transparent text-[var(--muted)] hover:text-[var(--text)]'

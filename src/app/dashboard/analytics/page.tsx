@@ -23,9 +23,9 @@ const GEO_DATA = [
 export default function AnalyticsPage() {
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-[var(--text)]">Analytics</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-[var(--text)]">Analytics</h1>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <MetricCard
           title="Total Pageviews"
           value="24,580"

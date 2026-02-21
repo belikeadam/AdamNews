@@ -10,7 +10,7 @@ export default function Card({ children, className, hover = false }: CardProps) 
   return (
     <div
       className={cn(
-        'bg-[var(--bg)] border border-[var(--border)]',
+        'bg-[var(--bg)] border border-[var(--border)] overflow-hidden',
         hover && 'transition-colors hover:bg-[var(--surface)]',
         className
       )}
@@ -28,7 +28,7 @@ export function CardHeader({
   className?: string
 }) {
   return (
-    <div className={cn('px-5 py-4 border-b border-[var(--border)]', className)}>
+    <div className={cn('px-3 py-3 sm:px-5 sm:py-4 border-b border-[var(--border)]', className)}>
       {children}
     </div>
   )
@@ -41,5 +41,5 @@ export function CardContent({
   children: React.ReactNode
   className?: string
 }) {
-  return <div className={cn('px-5 py-4', className)}>{children}</div>
+  return <div className={cn('px-3 py-3 sm:px-5 sm:py-4', className)}>{children}</div>
 }

@@ -91,7 +91,7 @@ export default function Editor({
 
           <Card>
             <CardHeader>
-              <div className="flex items-center gap-2 text-sm text-[var(--muted)]">
+              <div className="flex items-center gap-1 sm:gap-2 text-sm text-[var(--muted)] flex-wrap">
                 <button className="px-2 py-1 rounded hover:bg-[var(--surface-2)] font-bold">
                   B
                 </button>
@@ -125,7 +125,7 @@ export default function Editor({
                 placeholder="Start writing your article..."
                 className="w-full min-h-[400px] bg-transparent text-[var(--text)] placeholder:text-[var(--muted)] resize-y focus:outline-none"
               />
-              <div className="flex items-center justify-between pt-2 border-t border-[var(--border)]">
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-[var(--border)]">
                 <p className="text-xs text-[var(--muted)]">
                   {wordCount} {wordCount === 1 ? 'word' : 'words'} &middot; {charCount.toLocaleString()} chars
                 </p>

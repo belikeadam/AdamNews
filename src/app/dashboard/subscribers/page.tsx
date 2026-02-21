@@ -43,14 +43,14 @@ export default function SubscribersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-[var(--text)]">Subscribers</h1>
-        <Button variant="outline" onClick={handleExport}>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold text-[var(--text)] truncate">Subscribers</h1>
+        <Button variant="outline" onClick={handleExport} className="shrink-0">
           Export CSV
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <MetricCard
           title="Total Subscribers"
           value="1,247"
@@ -112,7 +112,7 @@ export default function SubscribersPage() {
                     key={sub.email}
                     className="border-b border-[var(--border)] hover:bg-[var(--surface)]"
                   >
-                    <td className="py-3 text-[var(--text)]">{sub.email}</td>
+                    <td className="py-3 text-[var(--text)] max-w-[150px] sm:max-w-none truncate">{sub.email}</td>
                     <td className="py-3">
                       <Badge
                         variant={

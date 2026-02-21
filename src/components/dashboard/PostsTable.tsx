@@ -42,12 +42,12 @@ export default function PostsTable({ posts, onDelete }: PostsTableProps) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+    <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+      <table className="w-full text-sm" style={{ minWidth: '480px' }}>
         <thead>
           <tr className="border-b border-[var(--border)] text-left">
             <th className="pb-3 font-medium text-[var(--muted)]">Title</th>
-            <th className="pb-3 font-medium text-[var(--muted)]">Status</th>
+            <th className="pb-3 font-medium text-[var(--muted)] whitespace-nowrap">Status</th>
             <th className="pb-3 font-medium text-[var(--muted)] hidden sm:table-cell">
               Author
             </th>
@@ -69,12 +69,12 @@ export default function PostsTable({ posts, onDelete }: PostsTableProps) {
               key={post.id}
               className="border-b border-[var(--border)] hover:bg-[var(--surface)] transition-colors"
             >
-              <td className="py-3 pr-4">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-[var(--text)] line-clamp-1">
+              <td className="py-3 pr-4 max-w-[200px] sm:max-w-none">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="font-medium text-[var(--text)] line-clamp-1 break-all">
                     {post.title}
                   </span>
-                  {post.premium && <Badge variant="warning">$</Badge>}
+                  {post.premium && <Badge variant="warning" className="shrink-0">$</Badge>}
                 </div>
               </td>
               <td className="py-3 pr-4">
@@ -94,7 +94,7 @@ export default function PostsTable({ posts, onDelete }: PostsTableProps) {
               <td className="py-3 pr-4 text-[var(--muted)] hidden lg:table-cell">
                 {formatDate(post.date)}
               </td>
-              <td className="py-3">
+              <td className="py-3 whitespace-nowrap">
                 <div className="flex items-center justify-end gap-1">
                   <Link href={`/dashboard/posts/${post.id}/edit`}>
                     <Button variant="ghost" size="sm">
