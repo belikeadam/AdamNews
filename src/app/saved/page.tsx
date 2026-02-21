@@ -40,10 +40,10 @@ export default function SavedPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 pb-20 md:pb-8">
-      <div className="pt-8 pb-6 border-b border-[var(--border)] mb-8">
+    <div className="max-w-3xl mx-auto px-4 pb-24 md:pb-8">
+      <div className="pt-6 sm:pt-8 pb-4 sm:pb-6 border-b border-[var(--border)] mb-6 sm:mb-8">
         <h1
-          className="text-3xl font-bold text-[var(--text)] mb-2"
+          className="text-2xl sm:text-3xl font-bold text-[var(--text)] mb-2"
           style={{ fontFamily: 'var(--font-headline)' }}
         >
           Saved Articles

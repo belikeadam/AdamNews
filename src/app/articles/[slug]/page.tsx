@@ -126,7 +126,7 @@ export default async function ArticlePage({ params }: PageProps) {
       <ArticleAnalytics slug={slug} />
 
       {/* Full-bleed cover image */}
-      <div className="relative aspect-[2/1] sm:aspect-[5/2] lg:aspect-[3/1] bg-[var(--surface-2)] overflow-hidden">
+      <div className="relative aspect-[5/2] sm:aspect-[2/1] lg:aspect-[3/1] bg-[var(--surface-2)] overflow-hidden">
         <Image
           src={getArticleCoverUrl(a.cover?.data?.attributes?.url, slug, 1200, 800, a.coverUrl)}
           alt={a.title}
@@ -138,38 +138,38 @@ export default async function ArticlePage({ params }: PageProps) {
         <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg)] via-transparent to-transparent" />
       </div>
 
-      <article className="max-w-3xl mx-auto px-4 pb-20 md:pb-8 relative -mt-12 z-10">
+      <article className="max-w-3xl mx-auto px-4 pb-24 md:pb-8 relative -mt-6 sm:-mt-12 z-10">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-sm text-[var(--muted)] mb-6">
-          <Link href="/" className="hover:text-[var(--text)] transition-colors">
+        <nav className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-[var(--muted)] mb-3 sm:mb-6">
+          <Link href="/" className="hover:text-[var(--text)] transition-colors flex-shrink-0">
             Home
           </Link>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="flex-shrink-0"><polyline points="9 18 15 12 9 6" /></svg>
           {a.category?.data && (
             <>
-              <span>{categoryName}</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg>
+              <Link href={`/?category=${categorySlug}`} className="hover:text-[var(--text)] transition-colors flex-shrink-0">{categoryName}</Link>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="hidden sm:block flex-shrink-0"><polyline points="9 18 15 12 9 6" /></svg>
             </>
           )}
-          <span className="text-[var(--text)] truncate">{a.title}</span>
+          <span className="hidden sm:inline text-[var(--text)] truncate">{a.title}</span>
         </nav>
 
         {/* Category label */}
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-2 mb-2 sm:mb-3">
           {categoryName && <span className="section-label">{categoryName}</span>}
           {a.premium && <span className="section-label text-amber-700 dark:text-amber-400">Premium</span>}
         </div>
 
         {/* Title */}
         <h1
-          className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold text-[var(--text)] mb-5 leading-tight tracking-tight"
+          className="text-2xl sm:text-3xl lg:text-[2.75rem] font-bold text-[var(--text)] mb-3 sm:mb-5 leading-tight tracking-tight"
           style={{ fontFamily: 'var(--font-headline)' }}
         >
           {a.title}
         </h1>
 
         {/* Byline */}
-        <div className="flex flex-wrap items-center gap-3 text-sm text-[var(--muted)] mb-4 pb-4 border-b border-[var(--border)]">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-[var(--muted)] mb-3 pb-3 sm:mb-4 sm:pb-4 border-b border-[var(--border)]">
           {author && (
             <span className="font-medium text-[var(--text)]">
               By {author.attributes.name}
@@ -204,7 +204,7 @@ export default async function ArticlePage({ params }: PageProps) {
 
         {/* Premium access banner for subscribers viewing premium content */}
         {a.premium && hasAccess && (
-          <div className="flex items-center gap-2 mb-6 px-4 py-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
+          <div className="flex items-center gap-2 mb-4 sm:mb-6 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-600 dark:text-emerald-400 flex-shrink-0">
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
               <polyline points="22 4 12 14.01 9 11.01" />
@@ -230,8 +230,8 @@ export default async function ArticlePage({ params }: PageProps) {
         {hasAccess && <AdSlot position="in-article" className="mt-8" />}
 
         {/* Share row */}
-        <div className="flex items-center gap-2 mt-8 pt-6 border-t border-[var(--border)]">
-          <span className="text-sm font-medium text-[var(--muted)] mr-1">Share this article</span>
+        <div className="flex flex-wrap items-center gap-2 mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-[var(--border)]">
+          <span className="text-xs sm:text-sm font-medium text-[var(--muted)] mr-1">Share this article</span>
           <a
             href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(a.title)}&url=${encodeURIComponent(`https://adam-news.vercel.app/articles/${slug}`)}`}
             target="_blank"
@@ -269,19 +269,19 @@ export default async function ArticlePage({ params }: PageProps) {
 
         {/* Author bio */}
         {author && (
-          <div className="mt-8">
+          <div className="mt-6 sm:mt-8">
             <AuthorBio author={author} />
           </div>
         )}
 
         {/* Related articles */}
         {related && related.data.length > 0 && (
-          <section className="mt-12">
-            <div className="flex items-center gap-4 mb-6">
+          <section className="mt-8 sm:mt-12">
+            <div className="flex items-center gap-4 mb-4 sm:mb-6">
               <h2 className="section-label whitespace-nowrap">Related Articles</h2>
               <hr className="flex-1 border-t border-[var(--border)]" />
             </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {related.data.map((ra) => (
                 <ArticleCard key={ra.id} article={ra} />
               ))}

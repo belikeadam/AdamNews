@@ -89,9 +89,9 @@ function SearchContent() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 pb-20 md:pb-8">
+    <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8 pb-24 md:pb-8">
       <h1
-        className="text-3xl font-bold text-[var(--text)] mb-6"
+        className="text-2xl sm:text-3xl font-bold text-[var(--text)] mb-4 sm:mb-6"
         style={{ fontFamily: 'var(--font-headline)' }}
       >
         Search &amp; Archive
@@ -146,7 +146,7 @@ function SearchContent() {
         </p>
       )}
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-4">
         {articles.map((a) => (
           <ArticleCard key={a.id} article={a} />
         ))}

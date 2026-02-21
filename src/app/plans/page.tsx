@@ -57,11 +57,11 @@ export default function PlansPage() {
     <>
       {/* Gradient header section */}
       <div className="bg-gradient-to-b from-[var(--surface)] to-[var(--bg)] border-b border-[var(--border)]">
-        <div className="max-w-5xl mx-auto px-4 py-16 pb-20 md:py-20 text-center">
-          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-[var(--text)] mb-4" style={{ fontFamily: 'var(--font-headline)' }}>
+        <div className="max-w-5xl mx-auto px-4 py-10 pb-14 sm:py-16 sm:pb-20 md:py-20 text-center">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-[var(--text)] mb-3 sm:mb-4" style={{ fontFamily: 'var(--font-headline)' }}>
             Choose your plan
           </h1>
-          <p className="text-lg text-[var(--muted)] mb-8 max-w-md mx-auto">
+          <p className="text-base sm:text-lg text-[var(--muted)] mb-6 sm:mb-8 max-w-md mx-auto">
             Unlock premium content and exclusive features with a plan that fits you.
           </p>
 
@@ -97,8 +97,8 @@ export default function PlansPage() {
       </div>
 
       {/* Plan cards */}
-      <div className="max-w-5xl mx-auto px-4 -mt-10 pb-20 md:pb-16">
-        <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
+      <div className="max-w-5xl mx-auto px-4 -mt-6 sm:-mt-10 pb-24 md:pb-16">
+        <div className="grid md:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {PLANS.map((plan) => {
             const isCurrent = isCurrentPlan(plan.id)
             return (

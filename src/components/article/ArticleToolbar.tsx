@@ -88,7 +88,7 @@ export default function ArticleToolbar({ slug, title, excerpt, category }: Artic
   }
 
   return (
-    <div className="sticky top-[2.75rem] z-30 bg-[var(--bg)]/90 backdrop-blur-sm border-b border-[var(--border)] -mx-4 px-4 py-2 mb-6">
+    <div className="sticky top-[2.75rem] z-30 bg-[var(--bg)]/90 backdrop-blur-sm border-b border-[var(--border)] -mx-4 px-4 py-2 mb-4 sm:mb-6">
       <div className="flex items-center justify-between">
         {/* Left — font size */}
         <button

@@ -85,7 +85,7 @@ export default function HomeClient({
       ) : (
         <>
           {/* NYT-style main grid */}
-          <div className="grid grid-cols-1 md:grid-cols-[2fr,1px,1fr] gap-0 mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-[2fr,1px,1fr] gap-0 mt-4 sm:mt-6">
             {/* Lead story + secondary */}
             <div className="pr-0 md:pr-8">
               {leadArticle && <LeadArticle article={leadArticle} />}
@@ -93,7 +93,7 @@ export default function HomeClient({
               {secondaryArticles.length > 0 && (
                 <>
                   <hr className="section-rule" />
-                  <div className="grid sm:grid-cols-2 gap-6">
+                  <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
                     {secondaryArticles.map((a) => (
                       <ArticleCard key={a.id} article={a} variant="compact" />
                     ))}
@@ -232,7 +232,7 @@ export default function HomeClient({
                   ))}
                 </div>
               ) : (
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-stagger">
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 animate-stagger">
                   {catArticles.slice(0, 3).map((a) => (
                     <ArticleCard key={a.id} article={a} />
                   ))}
@@ -258,7 +258,7 @@ function LeadArticle({ article }: { article: Article }) {
 
   return (
     <Link href={`/articles/${a.slug}`} className="group block">
-      <div className="relative aspect-[16/10] overflow-hidden mb-4 bg-[var(--surface-2)]">
+      <div className="relative aspect-[16/9] sm:aspect-[16/10] overflow-hidden mb-3 sm:mb-4 bg-[var(--surface-2)]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={coverUrl}
@@ -279,11 +279,11 @@ function LeadArticle({ article }: { article: Article }) {
         {a.title}
       </h2>
       {a.excerpt && (
-        <p className="text-[var(--muted)] text-base leading-relaxed mb-2 line-clamp-3">
+        <p className="text-[var(--muted)] text-sm sm:text-base leading-relaxed mb-2 line-clamp-2 sm:line-clamp-3">
           {a.excerpt}
         </p>
       )}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <span className="byline">
           {a.author?.data?.attributes?.name && `By ${a.author.data.attributes.name}`}
           {a.publishedAt && ` · ${relativeTime(a.publishedAt)}`}
