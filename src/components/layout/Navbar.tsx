@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { SITE_NAME_UPPER } from '@/constants/meta'
 import { signOut } from 'next-auth/react'
@@ -18,15 +18,41 @@ const STATIC_CATEGORIES = [
   { name: 'General', slug: 'general' },
 ]
 
+// Shared nav link data — single source of truth for desktop + mobile
+const TOOL_LINKS = [
+  { href: '/search', label: 'Search & Archive', icon: 'search' },
+  { href: '/plans', label: 'Plans & Pricing', icon: 'credit-card' },
+  { href: '/api-docs', label: 'API Documentation', icon: 'code' },
+] as const
+
+// Reusable icon component
+function NavIcon({ name }: { name: string }) {
+  const p = { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
+  switch (name) {
+    case 'home': return <svg {...p}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    case 'article': return <svg {...p}><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/></svg>
+    case 'search': return <svg {...p}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    case 'credit-card': return <svg {...p}><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+    case 'code': return <svg {...p}><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+    case 'dashboard': return <svg {...p}><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    case 'sign-in': return <svg {...p}><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+    case 'sign-out': return <svg {...p}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    case 'sun': return <svg {...p}><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    case 'moon': return <svg {...p}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    default: return null
+  }
+}
+
 export default function Navbar({ categories }: NavbarProps) {
   const { isAuthenticated, isAdmin, user, plan } = useAuth()
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [isDark, setIsDark] = useState(false)
   const [today, setToday] = useState('')
 
-  // Use dynamic categories from Strapi, fall back to static
   const cats = categories && categories.length > 0 ? categories : STATIC_CATEGORIES
+  const closeDrawer = useCallback(() => setDrawerOpen(false), [])
 
   useEffect(() => {
     const stored = localStorage.getItem('theme')
@@ -43,10 +69,10 @@ export default function Navbar({ categories }: NavbarProps) {
     }))
   }, [])
 
-  // Close drawer on route change
+  // Close drawer on ANY navigation (path or search params change)
   useEffect(() => {
     setDrawerOpen(false)
-  }, [pathname])
+  }, [pathname, searchParams])
 
   const toggleTheme = () => {
     const next = !isDark
@@ -54,6 +80,22 @@ export default function Navbar({ categories }: NavbarProps) {
     document.documentElement.classList.toggle('dark', next)
     localStorage.setItem('theme', next ? 'dark' : 'light')
   }
+
+  // DRY drawer link — closes drawer on click
+  const DrawerLink = ({ href, icon, children, active }: { href: string; icon: string; children: React.ReactNode; active?: boolean }) => (
+    <Link
+      href={href}
+      onClick={closeDrawer}
+      className={`flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
+        active
+          ? 'text-[var(--text)] bg-[var(--surface)]'
+          : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)]'
+      }`}
+    >
+      <NavIcon name={icon} />
+      {children}
+    </Link>
+  )
 
   return (
     <>
@@ -64,35 +106,15 @@ export default function Navbar({ categories }: NavbarProps) {
             <span className="hidden sm:inline" suppressHydrationWarning>{today}</span>
             <span className="sm:hidden text-[0.65rem]" suppressHydrationWarning>{today}</span>
             <div className="flex items-center gap-3">
-              <button
-                onClick={toggleTheme}
-                className="hover:text-[var(--text)] transition-colors"
-                aria-label="Toggle theme"
-              >
-                {isDark ? (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="5" />
-                    <line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" />
-                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                    <line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" />
-                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-                  </svg>
-                ) : (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                  </svg>
-                )}
+              <button onClick={toggleTheme} className="hover:text-[var(--text)] transition-colors" aria-label="Toggle theme">
+                <NavIcon name={isDark ? 'sun' : 'moon'} />
               </button>
               <span className="text-[var(--border)]">|</span>
               <div className="hidden md:flex items-center gap-3">
                 {isAuthenticated ? (
                   <>
-                    {isAdmin && (
-                      <Link href="/dashboard" className="hover:text-[var(--text)] transition-colors">Dashboard</Link>
-                    )}
-                    <button onClick={() => signOut({ callbackUrl: '/' })} className="hover:text-[var(--text)] transition-colors">
-                      Sign out
-                    </button>
+                    {isAdmin && <Link href="/dashboard" className="hover:text-[var(--text)] transition-colors">Dashboard</Link>}
+                    <button onClick={() => signOut({ callbackUrl: '/' })} className="hover:text-[var(--text)] transition-colors">Sign out</button>
                   </>
                 ) : (
                   <>
@@ -108,10 +130,7 @@ export default function Navbar({ categories }: NavbarProps) {
         {/* Centered masthead */}
         <div className="py-5 md:py-7 text-center border-b-2 border-[var(--rule)]">
           <Link href="/" className="inline-block">
-            <h1
-              className="text-3xl md:text-5xl font-bold tracking-tight text-[var(--text)]"
-              style={{ fontFamily: 'var(--font-headline)' }}
-            >
+            <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-[var(--text)]" style={{ fontFamily: 'var(--font-headline)' }}>
               {SITE_NAME_UPPER}
             </h1>
           </Link>
@@ -123,52 +142,30 @@ export default function Navbar({ categories }: NavbarProps) {
         {/* Section navigation — sticky */}
         <nav className="border-b border-[var(--border)] sticky top-0 z-40 bg-[var(--bg)]">
           <div className="max-w-7xl mx-auto px-4">
-            {/* Desktop — dynamic categories */}
+            {/* Desktop — uses same cats data */}
             <div className="hidden md:flex items-center justify-center gap-0 h-11 overflow-x-auto scrollbar-hide">
-              <Link
-                href="/"
-                className="px-4 py-3 text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors whitespace-nowrap border-b-2 border-transparent hover:border-[var(--text)]"
-              >
+              <Link href="/" className="px-4 py-3 text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors whitespace-nowrap border-b-2 border-transparent hover:border-[var(--text)]">
                 Home
               </Link>
               {cats.map((cat) => (
-                <Link
-                  key={cat.slug}
-                  href={`/?category=${cat.slug}`}
-                  className="px-4 py-3 text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors whitespace-nowrap border-b-2 border-transparent hover:border-[var(--text)]"
-                >
+                <Link key={cat.slug} href={`/?category=${cat.slug}`} className="px-4 py-3 text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors whitespace-nowrap border-b-2 border-transparent hover:border-[var(--text)]">
                   {cat.name}
                 </Link>
               ))}
-              <Link href="/search" className="px-4 py-3 text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors whitespace-nowrap border-b-2 border-transparent hover:border-[var(--text)]">
-                Search
-              </Link>
-              <Link href="/plans" className="px-4 py-3 text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors whitespace-nowrap border-b-2 border-transparent hover:border-[var(--text)]">
-                Plans
-              </Link>
-              <Link href="/api-docs" className="px-4 py-3 text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors whitespace-nowrap border-b-2 border-transparent hover:border-[var(--text)]">
-                API Docs
-              </Link>
+              {TOOL_LINKS.map((link) => (
+                <Link key={link.href} href={link.href} className="px-4 py-3 text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors whitespace-nowrap border-b-2 border-transparent hover:border-[var(--text)]">
+                  {link.label.split(' & ')[0]}
+                </Link>
+              ))}
             </div>
 
             {/* Mobile */}
             <div className="flex md:hidden items-center justify-between h-11">
-              <span
-                className="text-sm font-semibold tracking-tight"
-                style={{ fontFamily: 'var(--font-headline)' }}
-              >
+              <span className="text-sm font-semibold tracking-tight" style={{ fontFamily: 'var(--font-headline)' }}>
                 {SITE_NAME_UPPER}
               </span>
-              <button
-                onClick={() => setDrawerOpen(true)}
-                className="h-9 w-9 flex items-center justify-center text-[var(--muted)] hover:text-[var(--text)] transition-colors"
-                aria-label="Open menu"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <line x1="3" y1="6" x2="21" y2="6" />
-                  <line x1="3" y1="12" x2="21" y2="12" />
-                  <line x1="3" y1="18" x2="21" y2="18" />
-                </svg>
+              <button onClick={() => setDrawerOpen(true)} className="h-9 w-9 flex items-center justify-center text-[var(--muted)] hover:text-[var(--text)] transition-colors" aria-label="Open menu">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
               </button>
             </div>
           </div>
@@ -178,74 +175,52 @@ export default function Navbar({ categories }: NavbarProps) {
       {/* Mobile drawer */}
       {drawerOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
-          <div className="absolute inset-0 bg-black/40 animate-fade-in" onClick={() => setDrawerOpen(false)} />
+          <div className="absolute inset-0 bg-black/40 animate-fade-in" onClick={closeDrawer} />
           <div className="absolute top-0 right-0 w-80 h-full bg-[var(--bg)] border-l border-[var(--border)] shadow-2xl animate-slide-right overflow-y-auto">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-[var(--border)]">
-              <span className="font-bold text-[var(--text)]" style={{ fontFamily: 'var(--font-headline)' }}>
-                {SITE_NAME_UPPER}
-              </span>
-              <button
-                onClick={() => setDrawerOpen(false)}
-                className="h-9 w-9 flex items-center justify-center text-[var(--muted)] hover:text-[var(--text)] transition-colors"
-                aria-label="Close menu"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
+              <span className="font-bold text-[var(--text)]" style={{ fontFamily: 'var(--font-headline)' }}>{SITE_NAME_UPPER}</span>
+              <button onClick={closeDrawer} className="h-9 w-9 flex items-center justify-center text-[var(--muted)] hover:text-[var(--text)] transition-colors" aria-label="Close menu">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
 
-            {/* News Categories — dynamic from Strapi */}
+            {/* Categories — dynamic from Strapi via DrawerLink */}
             <div className="px-4 pt-5 pb-2">
               <h3 className="text-[0.65rem] uppercase tracking-[0.15em] text-[var(--muted)] font-medium mb-2 px-1">
                 News Categories
               </h3>
               <nav className="space-y-0">
-                <Link href="/" className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--text)] hover:bg-[var(--surface)] transition-colors">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                <DrawerLink href="/" icon="home" active={pathname === '/' && !searchParams.get('category')}>
                   All Stories
-                </Link>
+                </DrawerLink>
                 {cats.map((cat) => (
-                  <Link
-                    key={cat.slug}
-                    href={`/?category=${cat.slug}`}
-                    className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/></svg>
+                  <DrawerLink key={cat.slug} href={`/?category=${cat.slug}`} icon="article" active={searchParams.get('category') === cat.slug}>
                     {cat.name}
-                  </Link>
+                  </DrawerLink>
                 ))}
               </nav>
             </div>
 
             <hr className="mx-4 border-[var(--border)]" />
 
-            {/* Tools & Resources */}
+            {/* Tools — uses shared TOOL_LINKS */}
             <div className="px-4 pt-4 pb-2">
               <h3 className="text-[0.65rem] uppercase tracking-[0.15em] text-[var(--muted)] font-medium mb-2 px-1">
                 Tools &amp; Resources
               </h3>
               <nav className="space-y-0">
-                <Link href="/search" className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                  Search &amp; Archive
-                </Link>
-                <Link href="/plans" className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                  Plans &amp; Pricing
-                </Link>
-                <Link href="/api-docs" className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-                  API Documentation
-                </Link>
+                {TOOL_LINKS.map((link) => (
+                  <DrawerLink key={link.href} href={link.href} icon={link.icon} active={pathname === link.href}>
+                    {link.label}
+                  </DrawerLink>
+                ))}
               </nav>
             </div>
 
             <hr className="mx-4 border-[var(--border)]" />
 
-            {/* Account — dynamic based on auth state */}
+            {/* Account */}
             <div className="px-4 pt-4 pb-4">
               <h3 className="text-[0.65rem] uppercase tracking-[0.15em] text-[var(--muted)] font-medium mb-2 px-1">
                 Account
@@ -259,26 +234,21 @@ export default function Navbar({ categories }: NavbarProps) {
                       {plan} plan
                     </span>
                   </div>
-                  {isAdmin && (
-                    <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                      Dashboard
-                    </Link>
-                  )}
-                  <button onClick={() => signOut({ callbackUrl: '/' })} className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors w-full text-left">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                  {isAdmin && <DrawerLink href="/dashboard" icon="dashboard">Dashboard</DrawerLink>}
+                  <button onClick={() => { signOut({ callbackUrl: '/' }); closeDrawer() }} className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors w-full text-left">
+                    <NavIcon name="sign-out" />
                     Sign out
                   </button>
                 </div>
               ) : (
                 <div className="space-y-2 mt-1">
-                  <Link href="/login">
+                  <Link href="/login" onClick={closeDrawer}>
                     <button className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm border border-[var(--border)] hover:bg-[var(--surface)] transition-colors">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                      <NavIcon name="sign-in" />
                       Sign in
                     </button>
                   </Link>
-                  <Link href="/plans">
+                  <Link href="/plans" onClick={closeDrawer}>
                     <button className="w-full px-3 py-2.5 text-sm bg-[var(--text)] text-[var(--bg)] font-medium hover:opacity-90 transition-opacity">
                       Subscribe
                     </button>
@@ -290,19 +260,8 @@ export default function Navbar({ categories }: NavbarProps) {
             {/* Theme toggle */}
             <div className="px-4 pb-6">
               <hr className="border-[var(--border)] mb-4" />
-              <button
-                onClick={toggleTheme}
-                className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors w-full text-left"
-              >
-                {isDark ? (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-                  </svg>
-                ) : (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                  </svg>
-                )}
+              <button onClick={toggleTheme} className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors w-full text-left">
+                <NavIcon name={isDark ? 'sun' : 'moon'} />
                 {isDark ? 'Light mode' : 'Dark mode'}
               </button>
             </div>

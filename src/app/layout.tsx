@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { Inter, Playfair_Display } from 'next/font/google'
 import Providers from './providers'
 import Navbar from '@/components/layout/Navbar'
@@ -47,7 +48,9 @@ export default async function RootLayout({
     <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
       <body className="min-h-screen flex flex-col bg-[var(--bg)] text-[var(--text)] font-sans antialiased">
         <Providers>
-          <Navbar categories={categories} />
+          <Suspense>
+            <Navbar categories={categories} />
+          </Suspense>
           <main className="flex-1">{children}</main>
           <Footer />
           <MobileNav />
