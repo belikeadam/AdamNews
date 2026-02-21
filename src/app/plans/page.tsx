@@ -9,9 +9,11 @@ import { PLANS } from '@/constants/plans'
 import { cn } from '@/lib/utils'
 
 export default function PlansPage() {
-  const { status } = useSession()
+  const { data: session, status } = useSession()
   const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly')
   const [loading, setLoading] = useState<string | null>(null)
+
+  const currentPlan = session?.user?.plan || 'free'
 
   const handleSubscribe = async (planId: string) => {
     if (planId === 'free') {
@@ -44,6 +46,11 @@ export default function PlansPage() {
     } finally {
       setLoading(null)
     }
+  }
+
+  const isCurrentPlan = (planId: string) => {
+    if (status !== 'authenticated') return false
+    return planId === currentPlan
   }
 
   return (
@@ -92,66 +99,96 @@ export default function PlansPage() {
       {/* Plan cards */}
       <div className="max-w-5xl mx-auto px-4 -mt-10 pb-20 md:pb-16">
         <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
-          {PLANS.map((plan) => (
-            <Card
-              key={plan.id}
-              hover
-              className={cn(
-                'relative',
-                plan.highlight
-                  ? 'ring-2 ring-[var(--accent)] shadow-lg scale-[1.02]'
-                  : ''
-              )}
-            >
-              {plan.highlight && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                  <Badge variant="accent" size="md" pill>
-                    Most popular
-                  </Badge>
-                </div>
-              )}
-              <CardContent className="pt-8 pb-6">
-                <h3 className="text-lg font-semibold text-[var(--text)] mb-1">
-                  {plan.name}
-                </h3>
-                <div className="mb-6">
-                  <span className="text-4xl font-bold tracking-tight text-[var(--text)]">
-                    RM{plan.price[billing]}
-                  </span>
-                  {plan.price[billing] > 0 && (
-                    <span className="text-[var(--muted)] ml-1">/mo</span>
-                  )}
-                </div>
+          {PLANS.map((plan) => {
+            const isCurrent = isCurrentPlan(plan.id)
+            return (
+              <Card
+                key={plan.id}
+                hover
+                className={cn(
+                  'relative',
+                  isCurrent
+                    ? 'ring-2 ring-green-500 dark:ring-green-400'
+                    : plan.highlight
+                    ? 'ring-2 ring-[var(--accent)] shadow-lg scale-[1.02]'
+                    : ''
+                )}
+              >
+                {isCurrent ? (
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                    <Badge variant="success" size="md" pill>
+                      Your plan
+                    </Badge>
+                  </div>
+                ) : plan.highlight ? (
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                    <Badge variant="accent" size="md" pill>
+                      Most popular
+                    </Badge>
+                  </div>
+                ) : null}
+                <CardContent className="pt-8 pb-6">
+                  <h3 className="text-lg font-semibold text-[var(--text)] mb-1">
+                    {plan.name}
+                  </h3>
+                  <div className="mb-6">
+                    <span className="text-4xl font-bold tracking-tight text-[var(--text)]">
+                      RM{plan.price[billing]}
+                    </span>
+                    {plan.price[billing] > 0 && (
+                      <span className="text-[var(--muted)] ml-1">/mo</span>
+                    )}
+                  </div>
 
-                <ul className="space-y-3 mb-8">
-                  {plan.features.map((feature) => (
-                    <li
-                      key={feature}
-                      className="flex items-start gap-2.5 text-sm text-[var(--muted)]"
+                  <ul className="space-y-3 mb-8">
+                    {plan.features.map((feature) => (
+                      <li
+                        key={feature}
+                        className="flex items-start gap-2.5 text-sm text-[var(--muted)]"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+
+                  {isCurrent ? (
+                    <Button variant="outline" className="w-full" size="lg" disabled>
+                      Current plan
+                    </Button>
+                  ) : (
+                    <Button
+                      variant={plan.highlight ? 'primary' : 'outline'}
+                      className="w-full"
+                      size="lg"
+                      onClick={() => handleSubscribe(plan.id)}
+                      disabled={loading !== null}
                     >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-
-                <Button
-                  variant={plan.highlight ? 'primary' : 'outline'}
-                  className="w-full"
-                  size="lg"
-                  onClick={() => handleSubscribe(plan.id)}
-                  disabled={loading !== null}
-                >
-                  {loading === plan.id ? 'Redirecting…' : plan.cta}
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
+                      {loading === plan.id ? 'Redirecting…' : plan.cta}
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
 
-        <p className="text-center text-xs text-[var(--muted)] mt-10">
+        {/* Stripe test card hint */}
+        <div className="mt-8 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4 max-w-lg mx-auto text-center">
+          <p className="text-xs font-semibold text-blue-800 dark:text-blue-300 uppercase tracking-wider mb-1">
+            Stripe Test Mode
+          </p>
+          <p className="text-sm text-blue-700 dark:text-blue-400">
+            Use card <code className="font-mono bg-blue-100 dark:bg-blue-800/40 px-1.5 py-0.5 rounded text-blue-900 dark:text-blue-200">4242 4242 4242 4242</code>
+          </p>
+          <p className="text-xs text-blue-600 dark:text-blue-500 mt-1">
+            Any future expiry (e.g. 12/29) &middot; Any 3-digit CVC &middot; Any name
+          </p>
+        </div>
+
+        <p className="text-center text-xs text-[var(--muted)] mt-6">
           Secure payments via Stripe &middot; Cancel anytime &middot; 30-day money-back guarantee
         </p>
       </div>

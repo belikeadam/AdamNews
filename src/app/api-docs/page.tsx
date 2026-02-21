@@ -83,6 +83,49 @@ const ENDPOINTS = [
   -d '{"model":"article","entry":{"slug":"my-article"}}'`,
     tryUrl: null,
   },
+  {
+    id: 'views',
+    method: 'POST',
+    path: '/api/articles/:slug/views',
+    description: 'Increment the view counter for an article. Called automatically when a reader opens an article.',
+    auth: 'Public',
+    params: [
+      { name: 'slug', type: 'string', required: true, description: 'Article slug (URL parameter)' },
+    ],
+    curl: `curl -X POST "/api/articles/my-article-slug/views"`,
+    tryUrl: null,
+  },
+  {
+    id: 'analytics',
+    method: 'POST',
+    path: '/api/analytics',
+    description: 'Track reader engagement metrics (scroll depth, read time). Fires as a beacon when the user leaves the article page.',
+    auth: 'Public',
+    params: [
+      { name: 'type', type: 'string', required: true, description: 'Event type, e.g. "article_read"' },
+      { name: 'slug', type: 'string', required: true, description: 'Article slug' },
+      { name: 'readSeconds', type: 'number', required: false, description: 'Time spent reading in seconds' },
+      { name: 'maxScrollDepth', type: 'number', required: false, description: 'Maximum scroll percentage (0–100)' },
+    ],
+    curl: `curl -X POST "/api/analytics" \\
+  -H "Content-Type: application/json" \\
+  -d '{"type":"article_read","slug":"my-article","readSeconds":45,"maxScrollDepth":82}'`,
+    tryUrl: null,
+  },
+  {
+    id: 'stripe-webhook',
+    method: 'POST',
+    path: '/api/stripe/webhook',
+    description: 'Stripe webhook endpoint. Handles checkout.session.completed, subscription.updated, subscription.deleted, and invoice.payment_failed events.',
+    auth: 'Stripe signature (stripe-signature header)',
+    params: [
+      { name: 'body', type: 'string', required: true, description: 'Raw request body (verified via Stripe signature)' },
+    ],
+    curl: `# Called by Stripe — not invoked manually
+stripe trigger checkout.session.completed \\
+  --webhook-endpoint="/api/stripe/webhook"`,
+    tryUrl: null,
+  },
 ]
 
 const METHOD_COLORS = {

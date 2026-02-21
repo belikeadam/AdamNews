@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { planId, billing } = await request.json()
+  const { planId, billing } = (await request.json()) as { planId: string; billing: string }
   if (!planId || !billing) {
     return NextResponse.json(
       { error: 'planId and billing are required' },
@@ -39,6 +39,7 @@ export async function POST(request: Request) {
     const origin = new URL(request.url).origin
     const url = await createCheckoutSession({
       priceId,
+      planId,
       userId: session.user.id,
       userEmail: session.user.email || '',
       origin,

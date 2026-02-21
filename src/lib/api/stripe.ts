@@ -15,13 +15,14 @@ export async function createCheckoutSession(params: {
   userId: string
   userEmail: string
   origin: string
+  planId?: string
 }): Promise<string> {
   const stripe = getStripe()
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',
     payment_method_types: ['card'],
     line_items: [{ price: params.priceId, quantity: 1 }],
-    success_url: `${params.origin}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
+    success_url: `${params.origin}/account?checkout=success&plan=${params.planId || 'standard'}&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${params.origin}/plans`,
     customer_email: params.userEmail,
     metadata: {

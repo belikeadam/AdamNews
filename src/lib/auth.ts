@@ -60,11 +60,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   session: { strategy: 'jwt' },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session: updateData }) {
       if (user) {
         token.id = user.id as string
         token.role = (user as { role: UserRole }).role
         token.plan = (user as { plan: UserPlan }).plan
+      }
+      // Allow client-side plan upgrade via session.update({ plan })
+      if (trigger === 'update' && updateData?.plan) {
+        token.plan = updateData.plan
       }
       return token
     },

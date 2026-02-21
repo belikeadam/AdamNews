@@ -118,6 +118,10 @@ export default function Navbar({ categories }: NavbarProps) {
               <div className="hidden md:flex items-center gap-3">
                 {isAuthenticated ? (
                   <>
+                    <Link href="/account" className="hover:text-[var(--text)] transition-colors">
+                      {user?.name?.split(' ')[0] || 'Account'}
+                      <span className="ml-1 text-[0.6rem] uppercase tracking-wider text-[var(--accent)]">({plan})</span>
+                    </Link>
                     {isAdmin && <Link href="/dashboard" className="hover:text-[var(--text)] transition-colors">Dashboard</Link>}
                     <button onClick={() => signOut({ callbackUrl: '/' })} className="hover:text-[var(--text)] transition-colors">Sign out</button>
                   </>
@@ -250,6 +254,9 @@ export default function Navbar({ categories }: NavbarProps) {
                       {plan} plan
                     </span>
                   </div>
+                  <DrawerLink href="/account" icon="sign-in" active={pathname === '/account'}>
+                    My Account
+                  </DrawerLink>
                   {isAdmin && <DrawerLink href="/dashboard" icon="dashboard">Dashboard</DrawerLink>}
                   <button onClick={() => { signOut({ callbackUrl: '/' }); closeDrawer() }} className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors w-full text-left">
                     <NavIcon name="sign-out" />
