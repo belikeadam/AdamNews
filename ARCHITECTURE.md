@@ -1,0 +1,1040 @@
+# The Adam News — Full Architecture Document
+
+> A production-grade, full-stack news platform built as a Senior Full-Stack Developer portfolio project.
+> This document serves as a complete technical and business reference — readable by developers, AI agents, and non-technical stakeholders.
+
+**Live:** https://adam-news.vercel.app
+**Source:** https://github.com/belikeadam/AdamNews
+**CMS:** https://adamnews-production.up.railway.app/admin
+
+---
+
+## Table of Contents
+
+1. [Executive Summary](#1-executive-summary)
+2. [System Architecture](#2-system-architecture)
+3. [Tech Stack](#3-tech-stack)
+4. [Frontend (Next.js)](#4-frontend-nextjs)
+5. [Content Management (Strapi)](#5-content-management-strapi)
+6. [Authentication & Authorization](#6-authentication--authorization)
+7. [Payment System (Stripe)](#7-payment-system-stripe)
+8. [Caching & Performance](#8-caching--performance)
+9. [API Reference](#9-api-reference)
+10. [Data Models](#10-data-models)
+11. [Pages & Rendering Strategies](#11-pages--rendering-strategies)
+12. [Component Library](#12-component-library)
+13. [Design System](#13-design-system)
+14. [Testing](#14-testing)
+15. [CI/CD & Deployment](#15-cicd--deployment)
+16. [Environment Variables](#16-environment-variables)
+17. [Project Structure](#17-project-structure)
+18. [Security](#18-security)
+19. [Business Features](#19-business-features)
+20. [Known Limitations & Production Roadmap](#20-known-limitations--production-roadmap)
+
+---
+
+## 1. Executive Summary
+
+### What It Is
+
+The Adam News is a full-stack digital newspaper platform that demonstrates end-to-end proficiency in modern web development. It replicates the editorial experience of publications like The New York Times or The Guardian — with a headless CMS, subscription payments, role-based access control, and real-time content updates.
+
+### What It Demonstrates
+
+| Competency | Implementation |
+|-----------|---------------|
+| **Frontend Architecture** | Next.js 16 App Router, React 19, TypeScript, Server Components, ISR |
+| **Backend / API Design** | RESTful API routes, webhook handlers, Strapi CMS integration |
+| **Authentication** | NextAuth v5 with JWT sessions, OAuth (Google), credentials provider |
+| **Payments** | Stripe Checkout, subscriptions, webhook lifecycle management |
+| **Database / CMS** | Strapi v4 with PostgreSQL, structured content types, media handling |
+| **Caching** | Redis (Upstash), ISR tag-based revalidation, cache-aside pattern |
+| **DevOps** | Docker Compose (4 services), GitHub Actions CI, Vercel + Railway deploy |
+| **Testing** | Vitest with 41 tests covering utils, API routes, and rendering |
+| **SEO** | Dynamic sitemap, robots.txt, OpenGraph, Twitter Cards, JSON-LD schema |
+| **Design** | Tailwind CSS v4, dark mode, responsive, editorial typography (Playfair Display) |
+
+### Key Metrics
+
+- **12 articles** seeded with real tech news content
+- **4 categories** (Technology, Business, Finance, Lifestyle)
+- **3 authors** with profiles and avatars
+- **41 tests** passing across 3 test suites
+- **18 URLs** in sitemap (6 static + 12 dynamic)
+- **8 API routes** (3 GET, 5 POST)
+- **3 subscription plans** (Free, Standard RM9.99/mo, Premium RM19.99/mo)
+
+---
+
+## 2. System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         BROWSER                                  │
+│                                                                  │
+│  Next.js App (React 19)     ◄───── Tailwind CSS v4              │
+│  ├── Server Components (ISR)       Dark mode, CSS variables      │
+│  ├── Client Components (CSR)       Playfair Display + Inter      │
+│  └── Static Pages (SSG)                                          │
+└──────────┬──────────────────────────────────────────┬────────────┘
+           │ fetch / API calls                        │ Stripe.js
+           ▼                                          ▼
+┌─────────────────────┐               ┌──────────────────────────┐
+│   Vercel Edge CDN   │               │    Stripe                │
+│   ├── SSR runtime   │               │    ├── Checkout Sessions │
+│   ├── API routes    │               │    ├── Subscriptions     │
+│   ├── ISR cache     │               │    └── Webhooks          │
+│   └── Static assets │               └──────────────────────────┘
+└──────────┬──────────┘
+           │ REST API
+           ▼
+┌─────────────────────┐       ┌──────────────────────┐
+│   Strapi v4         │       │   Upstash Redis      │
+│   (Railway)         │       │   (Serverless)       │
+│   ├── Articles      │       │   ├── Cache-aside    │
+│   ├── Categories    │       │   └── TTL-based      │
+│   ├── Authors       │       └──────────────────────┘
+│   ├── Media uploads │
+│   └── Webhooks ─────┼──► POST /api/revalidate ──► ISR invalidation
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│   PostgreSQL        │
+│   (Railway)         │
+└─────────────────────┘
+```
+
+### Content Pipeline (How an article goes from author to reader)
+
+```
+1. Author creates article in Strapi admin panel
+                    │
+2. Strapi fires webhook (entry.create / entry.publish)
+                    │
+3. POST /api/revalidate receives webhook with secret verification
+                    │
+4. Next.js calls revalidateTag('articles') + revalidatePath('/')
+                    │
+5. Next request to page → Vercel re-renders from fresh Strapi data
+                    │
+6. Updated page served from Vercel Edge CDN globally (~50ms)
+```
+
+---
+
+## 3. Tech Stack
+
+### Core Framework
+
+| Technology | Version | Role |
+|-----------|---------|------|
+| **Next.js** | 16.1.6 | Full-stack React framework (App Router) |
+| **React** | 19.2.3 | UI runtime with Server Components |
+| **TypeScript** | 5.x | Type safety across entire codebase |
+| **Tailwind CSS** | 4.x | Utility-first styling with CSS variables |
+| **Turbopack** | Built-in | Dev server bundler (Next.js 16) |
+
+### Backend Services
+
+| Technology | Version | Role |
+|-----------|---------|------|
+| **Strapi** | 4.x | Headless CMS — content types, REST API, webhooks |
+| **PostgreSQL** | 16 | Strapi database (via Railway) |
+| **NextAuth** | 5.0.0-beta.30 | Authentication — JWT, OAuth, credentials |
+| **Stripe** | 20.3.1 | Payment processing — subscriptions, webhooks |
+| **Upstash Redis** | 1.36.2 | Serverless Redis — API caching, rate limiting |
+
+### Development & Testing
+
+| Technology | Version | Role |
+|-----------|---------|------|
+| **Vitest** | 4.0.18 | Unit test runner |
+| **Testing Library** | 16.3.2 | React component testing utilities |
+| **jsdom** | 28.1.0 | Browser environment for tests |
+| **ESLint** | 9.x | Code linting (Next.js config) |
+| **Docker Compose** | — | Local development (4-service stack) |
+| **GitHub Actions** | — | CI pipeline (type check, lint, test) |
+
+### Infrastructure
+
+| Service | Provider | Purpose |
+|---------|----------|---------|
+| **Frontend hosting** | Vercel | SSR, ISR, Edge CDN, auto-deploy from GitHub |
+| **CMS hosting** | Railway | Strapi server + PostgreSQL |
+| **Redis** | Upstash | Serverless Redis REST API |
+| **Payments** | Stripe | Test mode subscriptions |
+| **DNS / Domain** | Vercel | `adam-news.vercel.app` |
+
+---
+
+## 4. Frontend (Next.js)
+
+### Rendering Strategies Used
+
+| Strategy | Pages | How It Works |
+|----------|-------|-------------|
+| **ISR** (Incremental Static Regeneration) | Homepage, Article detail | Pre-rendered at build, revalidated every 60s OR on-demand via webhook |
+| **SSG** (Static Site Generation) | Plans, Login, Architecture, Privacy, Terms, Contact, API Docs | Built once at deploy time, no server-side data |
+| **CSR** (Client-Side Rendering) | Search, Account, Saved, Dashboard | `'use client'` — renders in browser, fetches data client-side |
+
+### App Router Structure
+
+Next.js 16 App Router uses file-system routing:
+
+- `src/app/page.tsx` → `/`
+- `src/app/articles/[slug]/page.tsx` → `/articles/any-slug`
+- `src/app/api/revalidate/route.ts` → `POST /api/revalidate`
+- `src/app/layout.tsx` → Wraps all pages (fonts, providers, navbar, footer)
+
+### Key Frontend Patterns
+
+**Server Components (default):** Pages like homepage and article detail fetch data server-side using `async` functions. Data never leaves the server. No client-side JavaScript bundle for data fetching.
+
+**Client Components (`'use client'`):** Interactive pages (search, dashboard, account) use React hooks (`useState`, `useEffect`, `useSession`). Marked with `'use client'` directive at file top.
+
+**Streaming with Suspense:** Navbar wrapped in `<Suspense>` to avoid blocking page render while categories load from Strapi.
+
+**Image Optimization:** All images use `next/image` with `fill` layout and responsive `sizes` prop. Remote patterns configured for any HTTPS hostname (news article images come from various sources).
+
+### Fonts
+
+| Font | Use | Source |
+|------|-----|--------|
+| **Playfair Display** | Headlines, masthead, section titles | Google Fonts via `next/font` |
+| **Inter** | Body text, UI elements, navigation | Google Fonts via `next/font` |
+
+Both loaded with `display: 'swap'` for zero layout shift.
+
+---
+
+## 5. Content Management (Strapi)
+
+### Content Types
+
+**Article** — the core content type:
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `title` | Text | Required |
+| `slug` | UID (from title) | URL-friendly, unique |
+| `excerpt` | Text | Short summary for cards |
+| `body` | Rich Text / Blocks | Full article content |
+| `cover` | Media (single) | Cover image |
+| `coverUrl` | Text | External cover URL (fallback) |
+| `category` | Relation (→ Category) | Many-to-one |
+| `author` | Relation (→ Author) | Many-to-one |
+| `tags` | JSON | String array |
+| `premium` | Boolean | Paywall flag |
+| `trending` | Boolean | Featured in carousel |
+| `views` | Integer | View counter (incremented via API) |
+| `readTime` | Text | "5 min read" |
+| `publishedAt` | DateTime | Publish date |
+
+**Category:**
+
+| Field | Type |
+|-------|------|
+| `name` | Text |
+| `slug` | UID |
+| `color` | Text (hex) |
+| `description` | Text |
+
+**Author:**
+
+| Field | Type |
+|-------|------|
+| `name` | Text |
+| `role` | Text |
+| `bio` | Text |
+| `avatar` | Media (single) |
+| `email` | Email |
+
+### Strapi REST API Client
+
+Located at `src/lib/api/strapi.ts`. Core `fetchStrapi<T>()` function:
+
+1. Constructs URL from `STRAPI_URL` (server) or `NEXT_PUBLIC_STRAPI_URL` (client)
+2. Attaches `Authorization: Bearer {STRAPI_API_TOKEN}` header
+3. Uses Next.js `fetch` with `next.revalidate` (ISR TTL) and `next.tags` (tag-based invalidation)
+4. On 401/403 with token: retries without token (graceful fallback)
+5. Throws on other non-OK responses
+
+**Exported functions:**
+
+| Function | Cache Tags | TTL | Purpose |
+|----------|-----------|-----|---------|
+| `getArticles(params?)` | `['articles']` | 60s | Paginated list, supports category/premium filters |
+| `getArticleBySlug(slug)` | `['article-{slug}']` | 60s | Single article with all relations |
+| `getTrendingArticles()` | `['articles', 'trending']` | 60s | Top 5 trending for carousel |
+| `getCategories()` | `['categories']` | 3600s | All categories sorted A-Z |
+| `getAuthors()` | `['authors']` | 3600s | All authors with avatars |
+| `getRelatedArticles(cat, exclude)` | `['articles']` | 60s | 3 articles from same category |
+
+### Webhook Integration
+
+Strapi fires lifecycle events (`entry.create`, `entry.update`, `entry.delete`, `entry.publish`, `entry.unpublish`) to `POST /api/revalidate`. The endpoint:
+
+1. Verifies `x-webhook-secret` header
+2. Extracts `slug` from webhook payload
+3. Calls `revalidatePath('/articles/{slug}')` for the specific article
+4. Calls `revalidateTag('articles')` to refresh listing pages
+5. Always revalidates homepage (`revalidatePath('/')`)
+
+---
+
+## 6. Authentication & Authorization
+
+### Architecture
+
+```
+NextAuth v5 (Auth.js)
+├── Providers
+│   ├── Credentials (email/password — demo users)
+│   └── Google OAuth
+├── Session Strategy: JWT (stateless)
+├── Middleware: protects /dashboard/* and /api/stripe/checkout
+└── Callbacks: jwt → session (propagates role + plan)
+```
+
+### Demo Users (Credentials Provider)
+
+| Email | Password | Role | Plan | Access |
+|-------|----------|------|------|--------|
+| `admin@AdamNews.com` | `demo1234` | `admin` | `premium` | Dashboard, CMS editor, all content |
+| `reader@AdamNews.com` | `demo1234` | `user` | `free` | 5 articles/month, can upgrade via Stripe |
+
+Passwords stored as bcrypt hashes. Authentication via `bcrypt.compare()`.
+
+### JWT Token Structure
+
+```typescript
+{
+  id: string       // user ID
+  email: string    // user email
+  name: string     // display name
+  role: 'admin' | 'user'
+  plan: 'free' | 'standard' | 'premium'
+  iat: number      // issued at
+  exp: number      // expiration
+}
+```
+
+### Authorization Matrix
+
+| Resource | Free | Standard | Premium | Admin |
+|----------|------|----------|---------|-------|
+| Browse articles | 5/month | Unlimited | Unlimited | Unlimited |
+| Premium articles | Blocked (paywall) | Full access | Full access | Full access |
+| Bookmarks | Yes | Yes | Yes | Yes |
+| Dashboard | No | No | No | Yes |
+| CMS Editor | No | No | No | Yes |
+| Stripe Checkout | Yes (upgrade) | Yes (change) | Yes (change) | Yes |
+
+### Plan Upgrade Flow
+
+```
+1. User clicks "Start Standard" on /plans
+2. POST /api/stripe/checkout → creates Stripe Checkout Session
+3. User completes payment on Stripe hosted page
+4. Stripe redirects to /account?checkout=success&plan=standard
+5. Account page calls session.update({ plan: 'standard' })
+6. JWT callback detects trigger === 'update', sets token.plan
+7. All subsequent requests see upgraded plan — no re-login needed
+```
+
+### Middleware
+
+File: `src/proxy.ts` (registered as Next.js middleware)
+
+```typescript
+matcher: ['/dashboard/:path*', '/api/stripe/checkout']
+```
+
+- `/dashboard/*` — requires `role === 'admin'`, else redirect to `/`
+- `/api/stripe/checkout` — requires authenticated session (any role)
+- All other routes — public (no middleware intercept)
+
+---
+
+## 7. Payment System (Stripe)
+
+### Subscription Plans
+
+| Plan | Monthly | Annual | Stripe Price IDs |
+|------|---------|--------|-----------------|
+| **Reader** | RM0 | RM0 | No Stripe integration (free tier) |
+| **Standard** | RM9.99 | RM7.99/mo | `STRIPE_STANDARD_PRICE_ID` |
+| **Premium** | RM19.99 | RM15.99/mo | `STRIPE_PREMIUM_PRICE_ID` |
+
+Currency: Malaysian Ringgit (MYR). Currently in Stripe **test mode**.
+
+### Checkout Flow
+
+```
+Browser                    Next.js API              Stripe
+  │                           │                       │
+  │ POST /api/stripe/checkout │                       │
+  │ {planId, billing}         │                       │
+  │──────────────────────────►│                       │
+  │                           │ stripe.checkout.      │
+  │                           │ sessions.create()     │
+  │                           │──────────────────────►│
+  │                           │     session.url       │
+  │                           │◄──────────────────────│
+  │    { url }                │                       │
+  │◄──────────────────────────│                       │
+  │                           │                       │
+  │ redirect to Stripe        │                       │
+  │──────────────────────────────────────────────────►│
+  │                           │                       │
+  │ User pays (test card 4242...)                     │
+  │                           │                       │
+  │◄────── redirect to /account?checkout=success      │
+  │                           │                       │
+  │                           │ POST /api/stripe/     │
+  │                           │ webhook               │
+  │                           │◄──────────────────────│
+  │                           │ verify signature      │
+  │                           │ log subscription      │
+  │                           │ {received: true}      │
+  │                           │──────────────────────►│
+```
+
+### Webhook Events Handled
+
+| Event | Action |
+|-------|--------|
+| `checkout.session.completed` | Log user + subscription ID, resolve plan from price ID |
+| `customer.subscription.updated` | Log status change (active, past_due, unpaid) |
+| `customer.subscription.deleted` | Log cancellation (stub: downgrade to free) |
+| `invoice.payment_failed` | Log failure + customer email (stub: send notification) |
+
+**Critical implementation detail:** Webhook handler reads body with `request.text()` (not `.json()`) to preserve raw bytes for HMAC signature verification.
+
+### Test Cards
+
+| Card Number | Result |
+|------------|--------|
+| `4242 4242 4242 4242` | Payment succeeds |
+| `4000 0000 0000 0002` | Payment declined |
+| `4000 0025 0000 3155` | 3D Secure authentication required |
+
+---
+
+## 8. Caching & Performance
+
+### Three-Layer Caching Strategy
+
+```
+Layer 1: Vercel Edge CDN (ISR)
+├── Static pages cached globally
+├── Tag-based invalidation via revalidateTag()
+└── TTL: 60s articles, 3600s categories
+
+Layer 2: Upstash Redis (API cache)
+├── Cache-aside pattern
+├── TTL: configurable per key
+└── Graceful fallback on Redis failure
+
+Layer 3: Next.js fetch() cache (built-in)
+├── Automatic deduplication within request
+├── next.revalidate option
+└── next.tags for invalidation
+```
+
+### Redis Cache-Aside Pattern
+
+```typescript
+// src/lib/redis.ts
+async function getCached<T>(key, fetcher, ttlSeconds = 60) {
+  const cached = await redis.get(key)    // Try cache first
+  if (cached) return { data: cached, cached: true }
+
+  const data = await fetcher()           // Cache miss → fetch
+  await redis.set(key, data, { ex: ttlSeconds })  // Store in cache
+  return { data, cached: false }
+}
+```
+
+On Redis failure: silently falls through to direct Strapi fetch. No error thrown.
+
+### Cache Key Structure
+
+| Key Pattern | TTL | Data |
+|------------|-----|------|
+| `articles:page:{n}` | 60s | Paginated article list |
+| `article:{slug}` | 60s | Single article |
+| `categories` | 3600s | Category list |
+| `articles:trending` | 60s | Trending articles |
+
+### ISR Revalidation Triggers
+
+| Trigger | What Happens |
+|---------|-------------|
+| TTL expiry (60s) | Next request triggers background re-render |
+| Strapi webhook | `revalidateTag()` + `revalidatePath()` → immediate invalidation |
+| Manual (dashboard editor) | POST to `/api/revalidate` with slug → targeted invalidation |
+
+---
+
+## 9. API Reference
+
+### Strapi CMS Endpoints (Proxied)
+
+These are Strapi REST endpoints exposed through the CMS:
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/api/articles` | Public | Paginated articles with filters and sorting |
+| `GET` | `/api/categories` | Public | All categories sorted alphabetically |
+| `GET` | `/api/authors` | Public | All authors with avatar media |
+
+**Query parameters** (Strapi v4 syntax):
+- `populate=*` — include all relations
+- `pagination[page]=1&pagination[pageSize]=25`
+- `filters[category][slug][$eq]=technology`
+- `filters[premium][$eq]=true`
+- `sort=publishedAt:desc`
+
+### Next.js API Routes
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `POST` | `/api/revalidate` | `x-webhook-secret` header | ISR cache invalidation (Strapi webhook target) |
+| `POST` | `/api/stripe/checkout` | NextAuth session | Create Stripe Checkout Session |
+| `POST` | `/api/stripe/webhook` | Stripe signature | Handle subscription lifecycle events |
+| `POST` | `/api/articles/[slug]/views` | Public | Increment article view counter |
+| `POST` | `/api/analytics` | Public | Track scroll depth and read time |
+| `GET/POST` | `/api/auth/[...nextauth]` | NextAuth | Authentication endpoints (CSRF, session, callback, signout) |
+
+### GraphQL (Available but not primary)
+
+Strapi also exposes a GraphQL endpoint at `/graphql`. A client exists at `src/lib/api/graphql.ts` with pre-built queries for articles and article-by-slug. Not used in production pages (REST is primary).
+
+---
+
+## 10. Data Models
+
+### TypeScript Type Definitions
+
+```typescript
+// User types
+type UserRole = 'admin' | 'user'
+type UserPlan = 'free' | 'standard' | 'premium'
+
+// Strapi generic wrappers
+interface StrapiEntry<T> { id: number; attributes: T }
+interface StrapiCollectionResponse<T> {
+  data: StrapiEntry<T>[]
+  meta: { pagination: { page, pageSize, pageCount, total } }
+}
+
+// Article
+interface ArticleAttributes {
+  title: string
+  slug: string
+  excerpt: string | null
+  body: unknown                    // Rich text blocks or markdown
+  cover: StrapiMediaField          // { data: { id, attributes: { url, formats } } }
+  category: { data: StrapiEntry<CategoryAttributes> | null }
+  author: { data: StrapiEntry<AuthorAttributes> | null }
+  tags: string[] | null
+  premium: boolean                 // Paywall flag
+  trending: boolean                // Carousel flag
+  views: number                    // View counter
+  readTime: string | null          // "5 min read"
+  coverUrl: string | null          // External cover URL
+  publishedAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+// Category
+interface CategoryAttributes {
+  name: string; slug: string; color: string | null; description: string | null
+}
+
+// Author
+interface AuthorAttributes {
+  name: string; role: string | null; bio: string | null
+  avatar: StrapiMediaField; email: string | null
+}
+
+// Convenience aliases
+type Article = StrapiEntry<ArticleAttributes>
+type ArticlesResponse = StrapiCollectionResponse<ArticleAttributes>
+```
+
+---
+
+## 11. Pages & Rendering Strategies
+
+| Route | Rendering | Data Source | Features |
+|-------|-----------|------------|----------|
+| `/` | ISR (60s) | Strapi (articles, trending, categories) | Hero carousel, category grid, newsletter signup |
+| `/articles/[slug]` | ISR (60s) | Strapi (article, related) + auth session | SEO meta, JSON-LD, paywall, view tracking, sharing |
+| `/search` | CSR | Strapi REST (client-side fetch) | Full-text search, category filter, sort options |
+| `/plans` | SSG + CSR | Static plans data + Stripe checkout | Monthly/annual toggle, current plan indicator, test card hint |
+| `/account` | CSR | NextAuth session | Profile, plan status, post-checkout success |
+| `/saved` | CSR | localStorage | Bookmarked articles (client-side only) |
+| `/login` | SSG + CSR | None | Demo login buttons, Google OAuth, credential stepper |
+| `/dashboard` | CSR (admin) | Demo data (hardcoded) | KPI cards, sparkline charts |
+| `/dashboard/posts` | CSR (admin) | Demo data | Post table with status tabs |
+| `/dashboard/posts/[id]/edit` | CSR (admin) | Strapi REST (article by ID) | Rich text editor, save → revalidate |
+| `/dashboard/analytics` | CSR (admin) | Demo data | Traffic sources, geography |
+| `/dashboard/subscribers` | CSR (admin) | Demo data | Subscriber table, CSV export |
+| `/api-docs` | SSG + CSR | Live Strapi API (playground) | Interactive "Try it" with latency |
+| `/architecture` | SSG | Static data | This architecture overview |
+| `/contact` | SSG | None | Contact form (stub) |
+| `/privacy` | SSG | None | Privacy policy |
+| `/terms` | SSG | None | Terms of service |
+| `/sitemap.xml` | Dynamic | Strapi (all articles) | 18 URLs (6 static + 12 articles) |
+| `/robots.txt` | Static | None | Allow `/`, disallow `/dashboard/`, `/api/`, `/login` |
+
+---
+
+## 12. Component Library
+
+### Layout Components (`src/components/layout/`)
+
+| Component | Description |
+|-----------|-------------|
+| `Navbar` | 3-part newspaper masthead: utility bar (date, theme, auth), centered title, sticky section nav. Mobile hamburger drawer with slide animation. |
+| `Footer` | Centered masthead repeat, section links, copyright bar |
+| `MobileNav` | Fixed bottom tab bar (Home, Plans, API, Login) |
+| `Sidebar` | Dashboard sidebar navigation |
+| `TechBar` | Developer info bar showing page rendering strategy |
+
+### Reader Components (`src/components/reader/`)
+
+| Component | Description |
+|-----------|-------------|
+| `HeroCarousel` | Auto-advancing (5s), pause-on-hover, keyboard/dot/arrow nav. Full-bleed image + gradient overlay |
+| `ArticleCard` | 3 variants: `default` (image card), `compact` (text-only), `horizontal` (thumbnail left). Bookmark button, trending badge, view count |
+| `CategoryFilter` | Pill-style filter buttons for homepage |
+| `HeroArticle` | Single featured article layout |
+
+### Article Components (`src/components/article/`)
+
+| Component | Description |
+|-----------|-------------|
+| `ArticleBody` | Renders rich text (HTML, Markdown, or Strapi blocks). Handles paywall truncation with gradient fade |
+| `ArticleAnalytics` | Invisible component. Tracks: view count (POST on mount), scroll depth milestones, read time (beacon on unmount) |
+| `ArticleToolbar` | Sticky: font size cycler, bookmark toggle, copy link, native share (Web Share API) |
+| `ReadingProgress` | Fixed top progress bar — width = scroll percentage |
+| `AuthorBio` | Author card with name, role, bio, avatar |
+| `PaywallGate` | Upgrade prompt when free user hits premium article |
+
+### Auth Components (`src/components/auth/`)
+
+| Component | Description |
+|-----------|-------------|
+| `DemoLoginButtons` | One-click sign-in buttons (Admin Demo, Reader Demo) |
+| `LoginStepper` | 2-step: email → password, with error handling |
+| `OAuthButton` | Google sign-in button |
+
+### Dashboard Components (`src/components/dashboard/`)
+
+| Component | Description |
+|-----------|-------------|
+| `Chart` | CSS-drawn bar chart (no library dependency) |
+| `Editor` | Rich text editor for article creation/editing |
+| `MetricCard` | KPI card with trend indicator and sparkline |
+| `PostsTable` | Article management table with status badges |
+
+### UI Design System (`src/components/ui/`)
+
+| Component | Variants |
+|-----------|----------|
+| `Badge` | default, accent, success, warning, danger, purple / sizes: sm, md / pill option |
+| `Button` | primary, secondary, outline, ghost, danger / sizes: sm, md, lg / loading spinner |
+| `Card` | Card, CardHeader, CardContent / hover effect option |
+| `Input` | Labeled input with error state display |
+| `Modal` | Dialog overlay with backdrop |
+| `Skeleton` | Loading placeholder blocks |
+
+### Shared Components (`src/components/shared/`)
+
+| Component | Description |
+|-----------|-------------|
+| `DemoBanner` | Global banner for unauthenticated users — "Click here to try the demo" |
+| `ArchCallout` | Collapsible "How this works" box explaining API call, caching, and auth strategy per page |
+| `NewsletterSignup` | Email subscription form (simulated) |
+| `ScrollToTop` | Floating button appears after 300px scroll |
+| `AdSlot` | Advertisement placeholder (3 positions) |
+| `Toast` | Notification popup system |
+
+---
+
+## 13. Design System
+
+### Color Palette
+
+**Light mode (editorial newspaper aesthetic):**
+
+| Token | Value | Use |
+|-------|-------|-----|
+| `--bg` | `#faf9f6` | Warm off-white background (newspaper stock) |
+| `--surface` | `#f2f0eb` | Card backgrounds, input fills |
+| `--text` | `#1a1a1a` | Primary text (near-black) |
+| `--muted` | `#6b6b6b` | Secondary text, captions |
+| `--accent` | `#8b0000` | Dark burgundy — links, buttons, highlights |
+| `--rule` | `#1a1a1a` | Section divider lines |
+| `--success` | `#16a34a` | Positive indicators |
+| `--warning` | `#d97706` | Caution indicators |
+| `--danger` | `#dc2626` | Error states |
+
+**Dark mode:**
+
+| Token | Value | Use |
+|-------|-------|-----|
+| `--bg` | `#1a1a17` | Warm off-black |
+| `--text` | `#e8e4dc` | Cream text |
+| `--accent` | `#c45050` | Lighter red for contrast |
+
+### Typography Scale
+
+| Class | Size | Font | Use |
+|-------|------|------|-----|
+| `.headline-xl` | 2.5rem (40px) | Playfair Display, bold | Page titles |
+| `.headline-lg` | 1.75rem (28px) | Playfair Display, semibold | Section headings |
+| `.headline-md` | 1.25rem (20px) | Playfair Display, semibold | Card titles |
+| `.section-label` | 0.7rem (11.2px) | Inter, 600, uppercase | Category labels |
+| `.byline` | 0.8125rem (13px) | Inter, normal | Author attribution |
+| Prose `p` | 1.125rem (18px) | Inter, 1.8 line-height | Article body |
+
+### Animations
+
+- `animate-fade-in` (0.3s) — opacity 0→1
+- `animate-slide-up` (0.4s) — translate + fade
+- `animate-slide-right` (0.3s) — drawer entrance
+- `animate-scale-in` (0.2s) — scale 0.95→1
+- `animate-stagger` — children fade in with 80ms delay increment
+- `.img-zoom` — scale(1.03) on hover with 0.5s ease
+
+---
+
+## 14. Testing
+
+### Framework
+
+- **Vitest** 4.0.18 — test runner (Vite-native, Jest-compatible API)
+- **jsdom** 28.1.0 — browser environment simulation
+- **@testing-library/react** 16.3.2 — React component testing
+- **@testing-library/jest-dom** 6.9.1 — DOM matchers
+
+### Test Suites (41 tests total)
+
+**`src/__tests__/utils.test.ts`** — 26 tests
+- `cn()` — class merging, conditional classes, Tailwind conflict resolution
+- `formatDate()` — ISO string → "Jan 15, 2026" (UTC)
+- `readTime()` — word count / 200 wpm → "N min read"
+- `truncate()` — boundary conditions, short strings
+- `relativeTime()` — "Just now", "3h ago", "Yesterday", "3 days ago", old date fallback
+- `slugify()` — lowercase, special chars, dash collapsing, empty string
+- `getStrapiMediaUrl()` — null → placeholder, absolute pass-through, relative prepend
+- `getArticleCoverUrl()` — priority: external > Strapi > Picsum fallback
+
+**`src/__tests__/revalidate.test.ts`** — 5 tests
+- Rejects requests without valid webhook secret (401)
+- Revalidates article by slug (direct call format)
+- Handles Strapi webhook format (`entry.update` with nested entry)
+- Revalidates category tag on category model changes
+- Always revalidates homepage and `articles` tag regardless of input
+
+Uses `vi.resetModules()` + dynamic import to handle module-level constant caching of environment variables.
+
+**`src/__tests__/article-body.test.ts`** — 10 tests
+- Headings (h1, h2, h3) with proper ID generation
+- Bold/italic/bold+italic inline formatting
+- Inline code spans
+- Fenced code blocks with language class and HTML escaping
+- Links with `target="_blank"` and `rel="noopener noreferrer"`
+- Images with `loading="lazy"`
+- Blockquotes
+- Unordered lists
+- Horizontal rules
+- HTML entity escaping in code blocks
+
+### Running Tests
+
+```bash
+npm test           # Single run (CI)
+npm run test:watch # Watch mode (development)
+```
+
+---
+
+## 15. CI/CD & Deployment
+
+### CI Pipeline (GitHub Actions)
+
+File: `.github/workflows/deploy.yml`
+
+Triggers: push to `main`, pull requests to `main`.
+
+```
+1. Checkout code
+2. Setup Node.js 20 (npm cache)
+3. npm ci (install dependencies)
+4. npx tsc --noEmit (TypeScript type check)
+5. npm run lint (ESLint)
+6. npm test (Vitest — 41 tests)
+```
+
+Vercel auto-deploys from `main` branch when CI passes.
+
+### Deployment Architecture
+
+```
+GitHub (main branch)
+    │
+    ├──► GitHub Actions CI (type check, lint, test)
+    │
+    └──► Vercel (auto-deploy)
+         ├── Build: next build (Turbopack)
+         ├── Output: standalone (Docker-ready)
+         └── Edge CDN: global distribution
+
+Railway (separate deploy)
+    ├── Strapi v4 server
+    └── PostgreSQL 16
+```
+
+### Docker (Local Development)
+
+`docker-compose.yml` runs 4 services:
+
+| Service | Image | Port | Purpose |
+|---------|-------|------|---------|
+| `postgres` | postgres:16-alpine | 5433 | Strapi database |
+| `redis` | redis:7-alpine | 6379 | API caching |
+| `strapi` | ./cms (custom build) | 1337 | CMS server |
+| `web` | . (Next.js) | 3000 | Frontend |
+
+Hot reload enabled for Next.js via volume mounts.
+
+### Production Dockerfiles
+
+- `Dockerfile` (Next.js) — 3-stage build: deps → builder → runner. Node 20 Alpine, non-root user, standalone output.
+- `cms/Dockerfile` (Strapi) — 2-stage build with `vips-dev` for image processing. Node 20 Alpine.
+
+---
+
+## 16. Environment Variables
+
+### Required (Production)
+
+| Variable | Description |
+|----------|------------|
+| `NEXT_PUBLIC_STRAPI_URL` | Public Strapi URL (e.g., `https://adamnews-production.up.railway.app`) |
+| `STRAPI_API_TOKEN` | Strapi API token for server-side requests |
+| `STRAPI_WEBHOOK_SECRET` | Secret for verifying Strapi webhook calls |
+| `NEXTAUTH_SECRET` | JWT signing secret for NextAuth |
+| `NEXTAUTH_URL` | App URL for NextAuth callbacks |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
+| `STRIPE_SECRET_KEY` | Stripe server-side API key |
+| `STRIPE_PUBLISHABLE_KEY` | Stripe client-side key |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signature verification |
+| `STRIPE_STANDARD_PRICE_ID` | Stripe price ID for Standard plan |
+| `STRIPE_PREMIUM_PRICE_ID` | Stripe price ID for Premium plan |
+| `UPSTASH_REDIS_REST_URL` | Upstash Redis REST endpoint |
+| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis authentication token |
+
+### Optional
+
+| Variable | Description |
+|----------|------------|
+| `STRAPI_URL` | Internal Strapi URL (Docker: `http://strapi:1337`) |
+| `NEXT_PUBLIC_APP_URL` | Canonical site URL for SEO |
+| `STRIPE_STANDARD_MONTHLY_PRICE_ID` | Override for monthly Standard price |
+| `STRIPE_STANDARD_ANNUAL_PRICE_ID` | Override for annual Standard price |
+| `STRIPE_PREMIUM_MONTHLY_PRICE_ID` | Override for monthly Premium price |
+| `STRIPE_PREMIUM_ANNUAL_PRICE_ID` | Override for annual Premium price |
+| `NEWSDATA_API_KEY` | NewsData.io key for content seeding |
+
+---
+
+## 17. Project Structure
+
+```
+AdamNews/
+├── src/
+│   ├── app/                          # Next.js App Router
+│   │   ├── layout.tsx                # Root layout (fonts, providers, nav)
+│   │   ├── page.tsx                  # Homepage (ISR)
+│   │   ├── globals.css               # Design system (CSS variables, typography)
+│   │   ├── providers.tsx             # SessionProvider wrapper
+│   │   ├── error.tsx                 # Error boundary
+│   │   ├── not-found.tsx             # Custom 404
+│   │   ├── sitemap.ts               # Dynamic XML sitemap
+│   │   ├── robots.ts                # Robots.txt
+│   │   ├── articles/[slug]/page.tsx  # Article detail (ISR + SEO)
+│   │   ├── search/page.tsx           # Full-text search (CSR)
+│   │   ├── plans/page.tsx            # Subscription plans (SSG)
+│   │   ├── account/page.tsx          # User profile (CSR)
+│   │   ├── login/page.tsx            # Auth (SSG)
+│   │   ├── saved/page.tsx            # Bookmarks (CSR)
+│   │   ├── dashboard/               # Admin panel (CSR, auth-gated)
+│   │   │   ├── page.tsx             # Overview
+│   │   │   ├── posts/page.tsx       # Article management
+│   │   │   ├── posts/[id]/edit/     # Article editor
+│   │   │   ├── analytics/page.tsx   # Traffic analytics
+│   │   │   └── subscribers/page.tsx # Subscriber management
+│   │   ├── api-docs/page.tsx         # Interactive API playground
+│   │   ├── architecture/page.tsx     # Architecture overview
+│   │   ├── contact/page.tsx          # Contact form
+│   │   ├── privacy/page.tsx          # Privacy policy
+│   │   ├── terms/page.tsx            # Terms of service
+│   │   └── api/                      # API route handlers
+│   │       ├── revalidate/route.ts   # ISR webhook endpoint
+│   │       ├── analytics/route.ts    # Engagement tracking
+│   │       ├── articles/[slug]/views/route.ts  # View counter
+│   │       ├── stripe/checkout/route.ts        # Stripe Checkout
+│   │       ├── stripe/webhook/route.ts         # Stripe lifecycle
+│   │       └── auth/[...nextauth]/route.ts     # NextAuth handler
+│   ├── components/
+│   │   ├── layout/                   # Navbar, Footer, MobileNav, Sidebar, TechBar
+│   │   ├── reader/                   # HeroCarousel, ArticleCard, CategoryFilter
+│   │   ├── article/                  # ArticleBody, Analytics, Toolbar, PaywallGate
+│   │   ├── auth/                     # DemoLoginButtons, LoginStepper, OAuthButton
+│   │   ├── dashboard/               # Chart, Editor, MetricCard, PostsTable
+│   │   ├── shared/                   # DemoBanner, ArchCallout, ScrollToTop, Toast
+│   │   └── ui/                       # Badge, Button, Card, Input, Modal, Skeleton
+│   ├── lib/
+│   │   ├── api/strapi.ts            # Strapi REST client (fetchStrapi, getArticles, etc.)
+│   │   ├── api/stripe.ts            # Stripe helpers (createCheckoutSession, constructWebhookEvent)
+│   │   ├── api/graphql.ts           # Strapi GraphQL client (alternative)
+│   │   ├── auth.ts                  # NextAuth config + demo users
+│   │   ├── redis.ts                 # Upstash Redis cache-aside
+│   │   └── utils.ts                 # cn, formatDate, readTime, slugify, relativeTime, etc.
+│   ├── hooks/
+│   │   ├── useAuth.ts               # Auth state (isAuthenticated, isAdmin, plan)
+│   │   ├── useMediaQuery.ts         # Responsive breakpoints
+│   │   └── useToast.ts              # Toast notification system
+│   ├── constants/
+│   │   ├── meta.ts                  # Site name, description, default SEO metadata
+│   │   ├── plans.ts                 # Subscription plan definitions
+│   │   ├── nav.ts                   # Navigation items
+│   │   └── api.ts                   # Centralized API endpoint URLs
+│   ├── types/
+│   │   ├── strapi.ts                # Strapi response types (generic wrappers + content types)
+│   │   ├── auth.ts                  # UserRole, UserPlan, NextAuth module augmentation
+│   │   └── index.ts                 # Re-exports
+│   ├── __tests__/
+│   │   ├── setup.ts                 # Test setup (@testing-library/jest-dom)
+│   │   ├── utils.test.ts            # 26 utility function tests
+│   │   ├── revalidate.test.ts       # 5 API route tests
+│   │   └── article-body.test.ts     # 10 markdown rendering tests
+│   └── proxy.ts                     # NextAuth middleware
+├── cms/                              # Strapi CMS
+│   ├── Dockerfile                   # Strapi production build
+│   └── scripts/seed.ts             # Content seeding script
+├── public/                           # Static assets
+├── docker-compose.yml               # 4-service local dev stack
+├── Dockerfile                        # Next.js production build
+├── next.config.ts                   # Next.js config (standalone output, image remotes)
+├── vitest.config.ts                 # Test runner config
+├── tsconfig.json                    # TypeScript config
+├── package.json                     # Dependencies and scripts
+├── DEMO_GUIDE.md                    # Reviewer walkthrough
+├── ARCHITECTURE.md                  # This document
+└── .github/workflows/deploy.yml    # CI pipeline
+```
+
+---
+
+## 18. Security
+
+### Authentication Security
+
+- Passwords hashed with **bcrypt** (cost factor 10)
+- JWT sessions signed with `NEXTAUTH_SECRET` (256-bit)
+- CSRF protection built into NextAuth (token-based)
+- Google OAuth via official `next-auth/providers/google`
+
+### API Security
+
+- `/api/revalidate` — protected by `x-webhook-secret` header verification
+- `/api/stripe/webhook` — protected by Stripe HMAC signature verification (`stripe-signature` header)
+- `/api/stripe/checkout` — protected by NextAuth middleware (requires authenticated session)
+- Dashboard routes — middleware enforces `role === 'admin'`
+
+### Frontend Security
+
+- No raw HTML injection — React's JSX auto-escapes
+- `target="_blank"` links include `rel="noopener noreferrer"`
+- External images via `next/image` (no raw `<img>` tags)
+- Environment variables: server-only secrets never exposed to client (no `NEXT_PUBLIC_` prefix)
+
+### Content Security
+
+- Strapi API token used for server-side requests only
+- Fallback: if token authentication fails (401/403), retries without token for public content
+- Premium content gated server-side (not just CSS hiding)
+
+---
+
+## 19. Business Features
+
+### For Readers
+
+- **Free tier**: 5 articles/month with breaking news access
+- **Paid subscriptions**: Unlimited articles, no ads, offline reading
+- **Personalization**: Bookmarks (localStorage), dark mode preference
+- **Engagement**: View counts, read time estimates, share functionality (Web Share API)
+- **Search**: Full-text search across all articles with category and sort filters
+- **Newsletter**: Email signup form (stub for Mailchimp/Resend integration)
+
+### For Editors/Admins
+
+- **Strapi CMS**: Full CRUD for articles, categories, authors
+- **Rich text editor**: In-dashboard article editing with save → auto-revalidation
+- **Analytics dashboard**: Traffic overview, subscriber metrics (demo data)
+- **Webhook automation**: Publish in Strapi → live on site in seconds
+
+### For Business Stakeholders
+
+- **Subscription revenue**: 3-tier pricing (Free / RM9.99 / RM19.99 per month)
+- **Annual discount**: ~20% savings encourages longer commitment
+- **Stripe integration**: Industry-standard payment processing
+- **SEO optimized**: Sitemap, OG tags, Twitter Cards, JSON-LD for Google rich results
+- **Performance**: Edge CDN delivery, ISR caching, optimized images
+- **Mobile responsive**: Full experience on all device sizes
+
+---
+
+## 20. Known Limitations & Production Roadmap
+
+### Current Limitations (Demo Scope)
+
+| Limitation | Reason | Production Fix |
+|-----------|--------|----------------|
+| Hardcoded demo users | No user database | Connect to Strapi user collection or external auth DB |
+| Stripe webhook logs only | No persistent DB for subscriptions | Store subscription status in PostgreSQL/Strapi |
+| Dashboard uses demo data | No real analytics pipeline | Integrate PostHog, Mixpanel, or custom analytics |
+| Newsletter is simulated | No email service | Integrate Mailchimp, Resend, or SendGrid |
+| Bookmarks are localStorage | No cross-device sync | Store in user profile (database) |
+| Google OAuth may not work | Requires verified OAuth consent | Complete Google OAuth verification |
+| `// TODO` comments | Marked intentionally | Address before production use |
+
+### Production Roadmap
+
+1. **User database** — Replace demo users with Strapi user collection + password reset flow
+2. **Stripe subscription persistence** — Store plan in database, sync via webhook
+3. **Real analytics** — PostHog or Mixpanel integration for dashboard
+4. **Email service** — Newsletter signup, payment receipts, password reset
+5. **Comments system** — Article comments with moderation
+6. **Push notifications** — Breaking news alerts via service worker
+7. **i18n** — Multi-language support (Strapi supports this natively)
+8. **A/B testing** — Headline testing, layout experiments
+9. **Rate limiting** — Redis-based API rate limiting (foundation exists)
+10. **Monitoring** — Error tracking (Sentry), uptime monitoring
+
+---
+
+*Last updated: February 2026*
+*Built by Mohamed Adam as a Senior Full-Stack Developer portfolio project.*
