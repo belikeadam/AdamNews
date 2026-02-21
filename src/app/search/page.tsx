@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import ArticleCard from '@/components/reader/ArticleCard'
 import AdSlot from '@/components/shared/AdSlot'
@@ -9,6 +9,21 @@ import type { Article, Category } from '@/types'
 const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'
 
 export default function SearchPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="h-8 w-48 bg-[var(--surface-2)] animate-pulse mb-6" />
+          <div className="h-11 bg-[var(--surface-2)] animate-pulse mb-4" />
+        </div>
+      }
+    >
+      <SearchContent />
+    </Suspense>
+  )
+}
+
+function SearchContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
 
