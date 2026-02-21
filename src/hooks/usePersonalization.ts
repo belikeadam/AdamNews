@@ -13,6 +13,7 @@ const PROFILE_KEY = 'an_user_profile'
 
 export function usePersonalization() {
   const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     try {
@@ -21,6 +22,7 @@ export function usePersonalization() {
     } catch {
       // ignore
     }
+    setLoaded(true)
   }, [])
 
   const trackRead = useCallback((slug: string, category: string) => {
@@ -60,5 +62,5 @@ export function usePersonalization() {
       .map(([cat]) => cat)
     : []
 
-  return { profile, trackRead, setLang, topCategories }
+  return { profile, trackRead, setLang, topCategories, loaded }
 }

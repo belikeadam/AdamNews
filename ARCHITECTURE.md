@@ -1137,30 +1137,52 @@ AdamNews/
 
 ### Overview
 
-Adam News includes a production-grade AI intelligence layer powered by Google Gemini 2.5 Flash. This layer provides real-time content analysis, multilingual translation, conversational Q&A, personalized digests, and editorial AI tools — all running entirely on free tier with aggressive Redis caching. Total cost: **RM 0**.
+Adam News includes a production-grade AI intelligence layer powered by a **multi-model routing architecture** using Groq LLaMA 3.1 70B (primary) and Google Gemini 2.5 Flash (fallback + translation). A provider-agnostic AI router selects the best model per task, with automatic failover and Redis caching. Total cost: **RM 0** (both free tiers).
 
 ### AI Features
 
-| Feature | Route | What It Does | Cache TTL |
-|---------|-------|-------------|-----------|
-| **Article Intelligence** | `POST /api/ai/analyze` | TL;DR, key takeaways, sentiment, fact-check, entities, topics | 7 days |
-| **Translation** | `POST /api/ai/translate` | Translates articles between English and Bahasa Malaysia | 30 days |
-| **Article Chat** | `POST /api/ai/chat` | Answers questions using only article content (grounded, no hallucination) | 24 hours |
-| **Morning Digest** | `POST /api/ai/digest` | Personalized daily briefing based on reading interests | 6 hours |
-| **Editor Suggestions** | `POST /api/ai/suggest` | Headline alternatives with scores, SEO tips, auto-tags | 7 days |
-| **Audio Mode** | Client-side | Reads articles aloud using Web Speech API (EN or BM voice) | N/A (browser) |
+| Feature | Route | Primary Model | Cache TTL |
+|---------|-------|--------------|-----------|
+| **Article Intelligence** | `POST /api/ai/analyze` | Groq LLaMA 70B | 7 days |
+| **Translation** | `POST /api/ai/translate` | Gemini Flash | 30 days |
+| **Article Chat** | `POST /api/ai/chat` | Groq LLaMA 70B | 24 hours |
+| **Morning Digest** | `POST /api/ai/digest` | Groq LLaMA 70B | 6 hours |
+| **Editor Suggestions** | `POST /api/ai/suggest` | Groq LLaMA 70B | 7 days |
+| **Audio Mode** | Client-side (Web Speech API) | Browser-native | N/A |
+
+### Multi-Model Routing Architecture
+
+```
+API Route ────────► AI Router (src/lib/ai/router.ts)
+                    ├── 1. Check Redis cache (provider-agnostic)
+                    ├── 2. Select primary model by task type
+                    ├── 3. Check provider-specific rate limit
+                    ├── 4. Call primary provider
+                    ├── 5. On failure → automatic fallback to secondary
+                    └── 6. Cache result in Redis (same key regardless of provider)
+```
+
+### Task-Based Model Selection
+
+| Task | Primary | Fallback | Reason |
+|------|---------|----------|--------|
+| **Analyze** | Groq LLaMA 3.1 70B | Gemini Flash | Strong summarization + reasoning |
+| **Chat** | Groq LLaMA 3.1 70B | Gemini Flash | Fast + accurate Q&A |
+| **Translate** | Gemini Flash | Groq LLaMA 70B | Strong multilingual support |
+| **Digest** | Groq LLaMA 3.1 70B | Gemini Flash | Cost optimization |
+| **Suggest** | Groq LLaMA 3.1 70B | Gemini Flash | Creative headline generation |
 
 ### AI Architecture
 
 ```
 Article Page ─────► AIInsightsPanel
                     ├── Calls POST /api/ai/analyze
-                    ├── Returns structured JSON (summary, sentiment, entities)
+                    ├── Router → Groq LLaMA 70B (fallback: Gemini)
                     └── Cached in Redis (7 days per slug)
 
 Article Page ─────► LanguageToggle (BM ↔ EN)
                     ├── Calls POST /api/ai/translate
-                    ├── Swaps title + body content
+                    ├── Router → Gemini Flash (fallback: Groq)
                     └── Cached in Redis (30 days per slug+lang)
 
 Article Page ─────► AudioMode
@@ -1170,37 +1192,47 @@ Article Page ─────► AudioMode
 
 Article Page ─────► ArticleChat
                     ├── Calls POST /api/ai/chat
-                    ├── Gemini answers from article content only
+                    ├── Router → Groq LLaMA 70B (fallback: Gemini)
                     └── Cached in Redis (24h per slug+question)
 
 /digest Page ──────► Morning Digest
                     ├── Reads user interests from localStorage
                     ├── Fetches latest articles from Strapi
-                    ├── Calls POST /api/ai/digest
+                    ├── Router → Groq LLaMA 70B (fallback: Gemini)
                     └── Shared cache by interest+date (6h)
 
 Dashboard ─────────► AI Editor Tools
                     ├── Calls POST /api/ai/suggest
-                    ├── Returns headlines, SEO tips, tags
+                    ├── Router → Groq LLaMA 70B (fallback: Gemini)
                     └── Cached in Redis (7d per slug)
 ```
 
-### Gemini Client (`src/lib/ai/gemini.ts`)
+### AI Router (`src/lib/ai/router.ts`)
 
-Centralized Gemini client with:
+Provider-agnostic AI router with:
 
-1. **Shared instance** — single `GoogleGenAI` client reused across all routes
-2. **Rate limiter** — self-imposed 8 req/min cap (Gemini free tier allows 10)
-3. **Cache-aside** — checks Redis before calling Gemini, stores result after
-4. **Structured output** — Gemini JSON response mode for type-safe results
-5. **Error handling** — graceful fallback on API errors (never crashes the page)
+1. **Task-based selection** — routes each task to the best model (Groq for analysis/chat, Gemini for translation)
+2. **Automatic failover** — if primary provider fails or hits rate limit, transparently falls back to secondary
+3. **Per-provider rate limiting** — separate Redis counters for Groq (25 RPM) and Gemini (8 RPM)
+4. **Provider-agnostic cache** — same Redis cache keys regardless of which model served the response
+5. **Zero dependency Groq client** — uses native `fetch()` with OpenAI-compatible API (no SDK needed)
+6. **Error handling** — graceful fallback on API errors (never crashes the page)
+
+### File Structure
+
+```
+src/lib/ai/
+├── router.ts    ← AI Router: task-based selection, failover, cache
+├── groq.ts      ← Groq LLaMA client (fetch-based, zero deps)
+└── gemini.ts    ← Gemini client + rate limiter (Google GenAI SDK)
+```
 
 ### AI Rate Limiting
 
 | Limit | Value | Enforcement |
 |-------|-------|-------------|
+| Groq RPM (self-imposed) | 25 req/min | Redis counter per minute window |
 | Gemini RPM (self-imposed) | 8 req/min | Redis counter per minute window |
-| Gemini RPD (free tier) | 250 req/day | Aggressive caching reduces to ~50-80 actual calls/day |
 | Per-IP analyze | 20 req/min | Token bucket per IP |
 | Per-IP chat | 15 req/min | Token bucket per IP |
 | Per-IP translate | 10 req/min | Token bucket per IP |
@@ -1212,9 +1244,11 @@ Centralized Gemini client with:
 
 | Resource | Free Tier Limit | Our Daily Usage | Safety Margin |
 |----------|----------------|-----------------|---------------|
-| Gemini API calls | 250 RPD | ~50-80 (after caching) | 68-80% under |
-| Gemini RPM | 10 RPM | 8 RPM (self-imposed cap) | 20% under |
-| Redis commands | 10,000/day | ~4,335 (all features) | 57% under |
+| Groq API calls | 14,400 RPD | ~40-60 (after caching) | 99%+ under |
+| Groq RPM | 30 RPM | 25 RPM (self-imposed) | 17% under |
+| Gemini API calls | 250 RPD | ~10-20 (translation + fallback) | 92%+ under |
+| Gemini RPM | 10 RPM | 8 RPM (self-imposed) | 20% under |
+| Redis commands | 10,000/day | ~4,985 (all features) | 50% under |
 | Web Speech API | Unlimited | Browser-native | Infinite |
 
 ---

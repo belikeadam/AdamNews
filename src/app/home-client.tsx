@@ -9,6 +9,7 @@ import AdSlot from '@/components/shared/AdSlot'
 import NewsletterSignup from '@/components/shared/NewsletterSignup'
 import LiveReaderCount from '@/components/shared/LiveReaderCount'
 import { ScrollReveal, ScrollStagger, ScrollStaggerItem, SlideUp, FadeIn } from '@/components/motion'
+import AIShowcase from '@/components/home/AIShowcase'
 import { getArticleCoverUrl, relativeTime } from '@/lib/utils'
 import { getCategoryColor } from '@/constants/categories'
 import type { Article } from '@/types'
@@ -176,6 +177,11 @@ export default function HomeClient({
           <div className="flex-1" />
           <LiveReaderCount views={totalViews} className="hidden sm:inline-flex" />
         </div>
+      )}
+
+      {/* AI Showcase — only on homepage */}
+      {!isCategoryView && (
+        <AIShowcase firstArticleSlug={leadArticle?.attributes?.slug} />
       )}
 
       {/* "Just In" live timestamp bar — only on homepage */}

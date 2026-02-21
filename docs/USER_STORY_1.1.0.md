@@ -2,10 +2,11 @@
 
 > **Epic**: Transform Adam News from a standard news platform into an AI-augmented intelligent news experience
 > **Priority**: Critical (pre-submission to REV Media Group)
-> **Gemini API Key**: Already configured in Vercel
-> **New Dependencies**: `@google/genai` (official Google Generative AI SDK)
+> **AI Providers**: Groq LLaMA 3.1 70B (primary) + Google Gemini 2.5 Flash (fallback & translation)
+> **API Keys**: Both configured in Vercel environment
+> **New Dependencies**: `@google/genai` (Google Generative AI SDK)
 > **Estimated Redis Impact**: ~2,500 commands/day (well within 10,000 free tier)
-> **Estimated Gemini Usage**: ~50-80 calls/day after caching (well within 250 RPD free tier)
+> **Estimated AI Usage**: ~50-80 calls/day after caching (spread across both providers)
 
 ---
 
@@ -14,40 +15,68 @@
 REV Media Group manages 30+ digital brands reaching 15 million Malaysians monthly. They emphasize **"using tech and data to engage the perfect audience."** This story adds an AI intelligence layer that:
 
 1. **Directly demonstrates AI engineering skills** — the #1 differentiator in 2026
-2. **Solves real problems for a media company** — content analysis, multilingual support, editorial efficiency
-3. **Uses production patterns** — caching, rate limiting, structured output, error handling
-4. **Costs RM 0** — everything runs on Gemini free tier + existing Upstash Redis
+2. **Multi-model architecture** — provider-agnostic AI router with task-based model selection and automatic failover
+3. **Solves real problems for a media company** — content analysis, multilingual support, editorial efficiency
+4. **Uses production patterns** — caching, rate limiting, structured output, error handling, failover
+5. **Costs RM 0** — everything runs on Groq + Gemini free tiers + existing Upstash Redis
 
 ---
 
 ## Architecture Overview
 
 ```
-                    ┌──────────────────────────────────────────┐
-                    │           AI Intelligence Layer           │
-                    │                                          │
-                    │  ┌─────────────────────────────────────┐ │
-                    │  │ /api/ai/analyze     → Article Intel │ │
-                    │  │ /api/ai/translate   → BM ↔ EN      │ │
-                    │  │ /api/ai/chat        → Ask Article   │ │
-                    │  │ /api/ai/digest      → Morning Brief │ │
-                    │  │ /api/ai/suggest     → Editor Tools  │ │
-                    │  └──────────┬──────────────────────────┘ │
-                    │             │                             │
-                    │  ┌──────────▼──────────────────────────┐ │
-                    │  │  src/lib/ai/gemini.ts               │ │
-                    │  │  ├── Shared Gemini client           │ │
-                    │  │  ├── Rate limiter (12 req/min cap)  │ │
-                    │  │  ├── Redis cache-aside pattern      │ │
-                    │  │  └── Structured JSON output (Zod)   │ │
-                    │  └──────────┬──────────────────────────┘ │
-                    │             │                             │
-                    │  ┌──────────▼────────┐  ┌─────────────┐ │
-                    │  │ Gemini 2.5 Flash  │  │ Upstash     │ │
-                    │  │ (Free Tier)       │  │ Redis Cache │ │
-                    │  │ 10 RPM / 250 RPD  │  │ TTL: 7-30d  │ │
-                    │  └───────────────────┘  └─────────────┘ │
-                    └──────────────────────────────────────────┘
+                    ┌──────────────────────────────────────────────┐
+                    │           AI Intelligence Layer               │
+                    │                                              │
+                    │  ┌─────────────────────────────────────────┐ │
+                    │  │ /api/ai/analyze     → Article Intel     │ │
+                    │  │ /api/ai/translate   → BM ↔ EN          │ │
+                    │  │ /api/ai/chat        → Ask Article       │ │
+                    │  │ /api/ai/digest      → Morning Brief     │ │
+                    │  │ /api/ai/suggest     → Editor Tools      │ │
+                    │  └──────────┬──────────────────────────────┘ │
+                    │             │                                 │
+                    │  ┌──────────▼──────────────────────────────┐ │
+                    │  │  src/lib/ai/router.ts  (AI Router)     │ │
+                    │  │  ├── Task-based model selection         │ │
+                    │  │  ├── Automatic failover (primary→fallback)│
+                    │  │  ├── Per-provider rate limiting         │ │
+                    │  │  └── Redis cache-aside (provider-agnostic)│
+                    │  └───────┬─────────────────┬──────────────┘ │
+                    │          │                  │                 │
+                    │  ┌───────▼──────┐  ┌───────▼──────────────┐ │
+                    │  │ Groq LLaMA   │  │ Gemini 2.5 Flash     │ │
+                    │  │ 3.1 70B      │  │ (Google AI)          │ │
+                    │  │ 30 RPM free  │  │ 10 RPM / 250 RPD    │ │
+                    │  │ (primary)    │  │ (fallback + translate)│ │
+                    │  └──────────────┘  └──────────────────────┘ │
+                    │                                              │
+                    │  ┌──────────────────────────────────────┐   │
+                    │  │ Upstash Redis Cache · TTL: 6h-30d    │   │
+                    │  └──────────────────────────────────────┘   │
+                    └──────────────────────────────────────────────┘
+```
+
+### Smart Task-Based Routing Strategy
+
+| Task | Primary Model | Fallback | Reason |
+|------|--------------|----------|--------|
+| **Analyze** | Groq LLaMA 3.1 70B | Gemini Flash | Strong summarization + reasoning |
+| **Chat** | Groq LLaMA 3.1 70B | Gemini Flash | Fast + accurate Q&A |
+| **Translate** | Gemini Flash | Groq LLaMA 70B | Strong multilingual support |
+| **Digest** | Groq LLaMA 3.1 70B | Gemini Flash | Cost optimization |
+| **Suggest** | Groq LLaMA 3.1 70B | Gemini Flash | Creative headline generation |
+
+### Routing Flow
+
+```
+API Route → AI Router
+              ├── 1. Check Redis cache (provider-agnostic)
+              ├── 2. Select primary model by task type
+              ├── 3. Check provider rate limit
+              ├── 4. Call primary provider
+              ├── 5. On failure → try fallback provider
+              └── 6. Cache result in Redis
 ```
 
 ### Caching Strategy (Critical for Free Tier Survival)
@@ -59,21 +88,26 @@ REV Media Group manages 30+ digital brands reaching 15 million Malaysians monthl
 | `ai:chat:{slug}:{hash}` | 24 hours | Chat Q&A responses per article |
 | `ai:digest:{categories}:{dateHour}` | 6 hours | Shared morning digest by interest |
 | `ai:suggest:{slug}` | 7 days | Editor headline/SEO suggestions |
-| `rl:gemini:{minute}` | 65 seconds | Rate limiter window |
+| `rl:groq:{minute}` | 65 seconds | Groq rate limiter window |
+| `rl:gemini:{minute}` | 65 seconds | Gemini rate limiter window |
 
-**Golden Rule**: Never call Gemini twice for the same content. Cache everything aggressively.
+**Golden Rule**: Never call any AI provider twice for the same content. Cache everything aggressively.
 
-### Rate Limiting (Gemini-Specific)
+### Rate Limiting (Per-Provider)
 
 ```
-Free Tier Limits: 10 RPM, 250 RPD (Gemini 2.5 Flash)
+Groq Free Tier: 30 RPM, 14,400 RPD (LLaMA 3.1 70B)
+Our Self-Imposed: 25 RPM cap (safety margin)
+
+Gemini Free Tier: 10 RPM, 250 RPD (Gemini 2.5 Flash)
 Our Self-Imposed: 8 RPM cap (safety margin)
 
 Rate Limit Flow:
-1. Check Redis key rl:gemini:{minute}
-2. If count >= 8 → return 429 with retry-after
-3. If under limit → proceed, increment counter
-4. On Redis failure → fail-open (allow request)
+1. Router selects provider for task
+2. Check Redis key rl:{provider}:{minute}
+3. If primary over limit → try fallback provider
+4. If both over limit → return 429 with retry-after
+5. On Redis failure → fail-open (allow request)
 ```
 
 ---
@@ -489,7 +523,9 @@ In the admin dashboard, a new "AI Tools" section:
 src/
 ├── lib/
 │   └── ai/
-│       └── gemini.ts              ← Shared client, rate limiter, cache helper
+│       ├── router.ts             ← AI Router (task-based selection + failover)
+│       ├── groq.ts               ← Groq LLaMA client (fetch-based, zero deps)
+│       └── gemini.ts             ← Gemini client + rate limiter
 ├── app/
 │   ├── api/
 │   │   └── ai/
@@ -548,27 +584,28 @@ AI Translation       150    10     10      170
 AI Chat              200    30     20      250
 AI Digest            100    50     10      160
 AI Suggestions       50     10     5       65
-AI Rate Limiting     300    300    50      650
+AI Rate Limiting     600    600    100     1,300  (2 providers)
 ──────────────────────────────────────────────────────
-                                   TOTAL:  4,335/day
-                                   BUFFER: 5,665 spare
+                                   TOTAL:  4,985/day
+                                   BUFFER: 5,015 spare
 ```
 
 ---
 
 ## Definition of Done
 
-- [ ] All 6 features implemented and functional on live site
-- [ ] ARCHITECTURE.md updated with AI Intelligence Layer section
-- [ ] DEMO_GUIDE.md updated with AI feature walkthrough
-- [ ] All AI responses cached in Redis (verify cache hits in Upstash dashboard)
-- [ ] Gemini daily usage stays under 250 requests (verify in Google AI Studio)
-- [ ] Rate limiting prevents exceeding free tier limits
-- [ ] All features work in both light and dark mode
-- [ ] All features are mobile responsive
-- [ ] No TypeScript errors (`npx tsc --noEmit` passes)
-- [ ] Existing 41 tests still pass
-- [ ] New API routes include rate limiting + input validation (Zod)
+- [x] All 6 features implemented and functional on live site
+- [x] Multi-model AI router with task-based selection and automatic failover
+- [x] ARCHITECTURE.md updated with AI Intelligence Layer section
+- [x] DEMO_GUIDE.md updated with AI feature walkthrough
+- [x] All AI responses cached in Redis (provider-agnostic cache keys)
+- [x] Per-provider rate limiting (Groq 25 RPM, Gemini 8 RPM)
+- [x] Rate limiting prevents exceeding free tier limits for both providers
+- [x] All features work in both light and dark mode
+- [x] All features are mobile responsive
+- [x] No TypeScript errors (`npx tsc --noEmit` passes)
+- [x] 116 E2E tests passing
+- [x] All API routes include rate limiting + input validation (Zod)
 
 ---
 
@@ -580,13 +617,21 @@ AI Rate Limiting     300    300    50      650
 | **30+ multilingual brands** | BM ↔ EN translation toggle (Gemini-powered, Malaysia-specific) |
 | **Content at scale** | AI auto-analysis, auto-tagging, headline optimization for 67+ articles |
 | **Editorial efficiency** | AI editor tools that generate headlines, SEO suggestions, tags |
-| **Modern tech stack** | Google Gemini API, streaming responses, structured JSON output |
-| **Production readiness** | Redis caching, rate limiting, graceful error handling, Zod validation |
-| **Cost efficiency** | Entire AI layer runs on RM 0 (free tier) with aggressive caching |
+| **Modern tech stack** | Multi-model AI (Groq LLaMA + Gemini), provider-agnostic routing, streaming, structured JSON |
+| **Production readiness** | Redis caching, per-provider rate limiting, automatic failover, Zod validation |
+| **Cost efficiency** | Entire AI layer runs on RM 0 (dual free tiers) with aggressive caching |
+| **Senior-level architecture** | Provider-agnostic AI router with task-based model selection and failover handling |
+
+---
+
+## Portfolio Positioning Statement
+
+> "Implemented a provider-agnostic AI routing layer with task-based model selection (Groq LLaMA 3.1 70B + Gemini 2.5 Flash), automatic failover handling, and Redis-backed rate limiting to ensure high availability and cost efficiency across 5 AI endpoints serving 67+ articles."
 
 ---
 
 *User Story 1.1.0 — AI-Powered News Intelligence Layer*
 *Created: February 2026*
+*Updated: February 2026 (v1.1 — Multi-Model Routing)*
 *Author: Mohamed Adam bin Ajmal Khan*
-*Status: Awaiting approval*
+*Status: Implemented*

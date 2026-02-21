@@ -196,6 +196,41 @@ export default function DashboardOverview() {
         </Card>
       </div>
 
+      {/* AI Routing Status */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500 text-sm font-bold">
+              ◆
+            </div>
+            <div>
+              <h2 className="font-semibold text-[var(--text)]">AI Model Routing</h2>
+              <p className="text-xs text-[var(--muted)]">
+                Multi-provider routing with automatic failover
+              </p>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+            {[
+              { task: 'Analyze', model: 'Groq LLaMA 70B', fallback: 'Gemini Flash' },
+              { task: 'Chat', model: 'Groq LLaMA 70B', fallback: 'Gemini Flash' },
+              { task: 'Translate', model: 'Gemini Flash', fallback: 'Groq LLaMA 70B' },
+              { task: 'Digest', model: 'Groq LLaMA 70B', fallback: 'Gemini Flash' },
+              { task: 'Suggest', model: 'Groq LLaMA 70B', fallback: 'Gemini Flash' },
+            ].map((r) => (
+              <div key={r.task} className="p-3 rounded-lg bg-[var(--surface)] border border-[var(--border)]">
+                <div className="text-[0.6rem] font-bold text-[var(--muted)] uppercase tracking-wide">{r.task}</div>
+                <div className="text-xs font-semibold text-[var(--text)] mt-1">{r.model}</div>
+                <div className="text-[0.6rem] text-[var(--muted)] mt-0.5">Fallback: {r.fallback}</div>
+                <Badge variant="success" size="sm" className="mt-1.5">Active</Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* AI Editor Tools */}
       <AIEditorTools />
 

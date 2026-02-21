@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { callGeminiCached, parseGeminiJSON, RateLimitError } from '@/lib/ai/gemini'
+import { callAICached, parseGeminiJSON, RateLimitError } from '@/lib/ai/router'
 import { parseBody, AISuggestSchema } from '@/lib/validations'
 import { rateLimit, getClientIp, rateLimitHeaders } from '@/lib/rate-limit'
 import { logger } from '@/lib/logger'
@@ -57,7 +57,8 @@ Current Title: ${title}
 Current Excerpt: ${excerpt || 'None'}
 Article Content: ${content.slice(0, 5000)}`
 
-    const result = await callGeminiCached<AIEditorSuggestion>(
+    const result = await callAICached<AIEditorSuggestion>(
+      'suggest',
       `ai:suggest:${slug}`,
       prompt,
       CACHE_TTL,
@@ -67,10 +68,11 @@ Article Content: ${content.slice(0, 5000)}`
     logger.request('POST', '/api/ai/suggest', 200, Date.now() - start, {
       slug,
       cached: result.cached,
+      provider: result.provider,
     })
 
     return NextResponse.json(
-      { data: result.data, cached: result.cached },
+      { data: result.data, cached: result.cached, provider: result.provider },
       { headers: rateLimitHeaders(rl) }
     )
   } catch (err) {

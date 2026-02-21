@@ -127,7 +127,7 @@ export default function AIInsightsPanel({ slug, title, content }: Props) {
             <div className="flex items-center gap-3 py-3 text-[var(--muted)]">
               <div className="w-4 h-4 rounded-full border-2 border-[var(--accent)] border-t-transparent animate-spin" />
               <span className="text-sm">
-                {retryIn > 0 ? `Rate limited — retrying in ${retryIn}s...` : 'Analyzing with Gemini...'}
+                {retryIn > 0 ? `Rate limited — retrying in ${retryIn}s...` : 'Analyzing with AI...'}
               </span>
             </div>
           )}

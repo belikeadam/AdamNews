@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { callGeminiCached, parseGeminiJSON, RateLimitError } from '@/lib/ai/gemini'
+import { callAICached, parseGeminiJSON, RateLimitError } from '@/lib/ai/router'
 import { parseBody, AIDigestSchema } from '@/lib/validations'
 import { rateLimit, getClientIp, rateLimitHeaders } from '@/lib/rate-limit'
 import { logger } from '@/lib/logger'
@@ -56,7 +56,8 @@ Respond ONLY with valid JSON (no markdown, no code fences):
   "closingNote": "1 uplifting or thought-provoking sentence to end the briefing"
 }`
 
-    const result = await callGeminiCached<AIDigest>(
+    const result = await callAICached<AIDigest>(
+      'digest',
       cacheKey,
       prompt,
       CACHE_TTL,
@@ -66,10 +67,11 @@ Respond ONLY with valid JSON (no markdown, no code fences):
     logger.request('POST', '/api/ai/digest', 200, Date.now() - start, {
       categories: catKey,
       cached: result.cached,
+      provider: result.provider,
     })
 
     return NextResponse.json(
-      { data: result.data, cached: result.cached },
+      { data: result.data, cached: result.cached, provider: result.provider },
       { headers: rateLimitHeaders(rl) }
     )
   } catch (err) {

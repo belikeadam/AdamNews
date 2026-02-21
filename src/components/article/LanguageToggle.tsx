@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 type Lang = 'en' | 'ms'
 
@@ -14,10 +14,19 @@ interface Props {
 export default function LanguageToggle({ slug, originalTitle, originalContent, onTranslate }: Props) {
   const [activeLang, setActiveLang] = useState<Lang>('en')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [translationCache, setTranslationCache] = useState<Record<string, { title: string; content: string }>>({})
+
+  // Auto-clear error after 3s
+  useEffect(() => {
+    if (!error) return
+    const t = setTimeout(() => setError(''), 3000)
+    return () => clearTimeout(t)
+  }, [error])
 
   const switchTo = async (lang: Lang) => {
     if (lang === activeLang) return
+    setError('')
 
     // Switch back to original
     if (lang === 'en') {
@@ -47,13 +56,20 @@ export default function LanguageToggle({ slug, originalTitle, originalContent, o
       })
 
       if (res.ok) {
-        const { data } = await res.json()
-        setTranslationCache(prev => ({ ...prev, [lang]: data }))
-        setActiveLang(lang)
-        onTranslate(data.title, data.content, lang)
+        const body = await res.json()
+        if (body.fallback) {
+          // Gemini failed — show error, stay on current language
+          setError('Translation unavailable right now')
+        } else {
+          setTranslationCache(prev => ({ ...prev, [lang]: body.data }))
+          setActiveLang(lang)
+          onTranslate(body.data.title, body.data.content, lang)
+        }
+      } else {
+        setError('Translation unavailable right now')
       }
     } catch {
-      // silently fail
+      setError('Translation unavailable right now')
     } finally {
       setLoading(false)
     }
@@ -65,7 +81,7 @@ export default function LanguageToggle({ slug, originalTitle, originalContent, o
   ]
 
   return (
-    <div className="inline-flex items-center gap-2">
+    <div className="inline-flex items-center gap-2 flex-wrap">
       <span className="text-[0.65rem] font-semibold text-[var(--muted)] uppercase tracking-wide">
         Read in
       </span>
@@ -89,6 +105,11 @@ export default function LanguageToggle({ slug, originalTitle, originalContent, o
       {loading && (
         <span className="text-[0.65rem] text-[var(--accent)] animate-pulse">
           Translating...
+        </span>
+      )}
+      {error && (
+        <span className="text-[0.65rem] text-[var(--danger)]">
+          {error}
         </span>
       )}
     </div>

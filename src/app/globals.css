@@ -197,23 +197,29 @@ body {
   margin-top: 1.25rem;
   margin-bottom: 0.5rem;
 }
+.prose { --article-font-scale: 1; }
 .prose p {
   font-family: var(--font-body);
-  font-size: 1rem;
+  font-size: calc(1rem * var(--article-font-scale));
   line-height: 1.75;
   margin-bottom: 1rem;
 }
+.prose li {
+  font-size: calc(1rem * var(--article-font-scale));
+}
 @media (min-width: 640px) {
-  .prose h1 { font-size: 2.25rem; line-height: 1.1; }
-  .prose h2 { font-size: 1.625rem; margin-top: 2rem; margin-bottom: 0.75rem; }
-  .prose h3 { font-size: 1.25rem; margin-top: 1.5rem; }
-  .prose p { font-size: 1.0625rem; line-height: 1.8; margin-bottom: 1.25rem; }
+  .prose h1 { font-size: calc(2.25rem * var(--article-font-scale)); line-height: 1.1; }
+  .prose h2 { font-size: calc(1.625rem * var(--article-font-scale)); margin-top: 2rem; margin-bottom: 0.75rem; }
+  .prose h3 { font-size: calc(1.25rem * var(--article-font-scale)); margin-top: 1.5rem; }
+  .prose p { font-size: calc(1.0625rem * var(--article-font-scale)); line-height: 1.8; margin-bottom: 1.25rem; }
+  .prose li { font-size: calc(1.0625rem * var(--article-font-scale)); }
 }
 @media (min-width: 1024px) {
-  .prose h1 { font-size: 2.75rem; }
-  .prose h2 { font-size: 1.875rem; }
-  .prose h3 { font-size: 1.375rem; }
-  .prose p { font-size: 1.125rem; }
+  .prose h1 { font-size: calc(2.75rem * var(--article-font-scale)); }
+  .prose h2 { font-size: calc(1.875rem * var(--article-font-scale)); }
+  .prose h3 { font-size: calc(1.375rem * var(--article-font-scale)); }
+  .prose p { font-size: calc(1.125rem * var(--article-font-scale)); }
+  .prose li { font-size: calc(1.125rem * var(--article-font-scale)); }
 }
 .prose a {
   color: var(--accent);

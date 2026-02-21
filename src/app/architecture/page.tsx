@@ -55,8 +55,8 @@ const STACK = [
   },
   {
     layer: 'AI',
-    tech: 'Google Gemini 2.5 Flash',
-    detail: 'Article analysis, translation, chat, digest, editor tools — free tier',
+    tech: 'Groq LLaMA 3.1 70B + Gemini Flash',
+    detail: 'Multi-model router with task-based selection, auto-failover, and Redis caching',
     badge: 'RM 0 cost',
     badgeVariant: 'success' as const,
   },
@@ -144,9 +144,9 @@ const KEY_PATTERNS = [
     code: 'const { data, error } = await parseBody(request, CheckoutSchema)',
   },
   {
-    title: 'AI Cache-Aside with Gemini',
-    desc: 'All AI responses are cached aggressively in Redis (7-30 day TTL). Self-imposed rate limit of 8 req/min keeps within Gemini free tier. Graceful fallback on API errors.',
-    code: 'const result = await callGeminiCached(cacheKey, prompt, TTL, parseJSON)',
+    title: 'Multi-Model AI Router',
+    desc: 'Provider-agnostic AI router selects the best model per task (Groq for analysis/chat, Gemini for translation). Automatic failover, per-provider rate limits, and Redis caching (7-30d TTL).',
+    code: 'const result = await callAICached("analyze", cacheKey, prompt, TTL, parseJSON)',
   },
 ]
 
@@ -384,7 +384,7 @@ export default function ArchitecturePage() {
 │   └── shared/           # ArchCallout, DemoBanner, ScrollToTop
 ├── lib/
 │   ├── api/              # Strapi client, Stripe helpers
-│   ├── ai/gemini.ts      # Gemini client, rate limiter, cache-aside
+│   ├── ai/               # router.ts (AI Router), groq.ts, gemini.ts
 │   ├── auth.ts           # NextAuth config + demo users
 │   └── utils.ts          # cn(), formatDate, readTime, slugify
 ├── constants/            # meta, plans, nav

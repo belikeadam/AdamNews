@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { callGeminiCached, parseGeminiJSON, RateLimitError } from '@/lib/ai/gemini'
+import { callAICached, parseGeminiJSON, RateLimitError } from '@/lib/ai/router'
 import { parseBody, AIChatSchema } from '@/lib/validations'
 import { rateLimit, getClientIp, rateLimitHeaders } from '@/lib/rate-limit'
 import { logger } from '@/lib/logger'
@@ -48,7 +48,8 @@ Article Content: ${content.slice(0, 6000)}
 
 User Question: ${question}`
 
-    const result = await callGeminiCached<AIChatResponse>(
+    const result = await callAICached<AIChatResponse>(
+      'chat',
       `ai:chat:${slug}:${qHash}`,
       prompt,
       CACHE_TTL,
@@ -58,10 +59,11 @@ User Question: ${question}`
     logger.request('POST', '/api/ai/chat', 200, Date.now() - start, {
       slug,
       cached: result.cached,
+      provider: result.provider,
     })
 
     return NextResponse.json(
-      { data: result.data, cached: result.cached },
+      { data: result.data, cached: result.cached, provider: result.provider },
       { headers: rateLimitHeaders(rl) }
     )
   } catch (err) {

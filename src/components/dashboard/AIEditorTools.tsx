@@ -25,6 +25,7 @@ export default function AIEditorTools() {
   const [suggestions, setSuggestions] = useState<AIEditorSuggestion | null>(null)
   const [loading, setLoading] = useState(false)
   const [cached, setCached] = useState(false)
+  const [provider, setProvider] = useState<string | null>(null)
   const [selectedArticle] = useState(SAMPLE_ARTICLES[0])
 
   const analyze = async () => {
@@ -42,9 +43,10 @@ export default function AIEditorTools() {
       })
 
       if (res.ok) {
-        const { data, cached: wasCached } = await res.json()
-        setSuggestions(data)
-        setCached(wasCached)
+        const json = await res.json()
+        setSuggestions(json.data)
+        setCached(json.cached)
+        setProvider(json.provider || null)
       }
     } catch {
       // silently fail
@@ -56,7 +58,7 @@ export default function AIEditorTools() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-[var(--accent)] flex items-center justify-center text-white text-sm font-bold">
               AI
@@ -64,17 +66,26 @@ export default function AIEditorTools() {
             <div>
               <h2 className="font-semibold text-[var(--text)]">AI Editor Tools</h2>
               <p className="text-xs text-[var(--muted)]">
-                Optimize headlines, SEO, and tags with AI{cached ? ' · Cached' : ''}
+                Optimize headlines, SEO, and tags with AI
+                {cached && ' · Cached'}
+                {provider && !cached && ` · via ${provider === 'groq' ? 'Groq LLaMA 70B' : 'Gemini Flash'}`}
               </p>
             </div>
           </div>
-          <button
-            onClick={analyze}
-            disabled={loading}
-            className="px-3 py-1.5 rounded-lg bg-[var(--accent)] text-white text-xs font-semibold hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 cursor-pointer"
-          >
-            {loading ? 'Analyzing...' : suggestions ? 'Re-analyze' : 'Analyze Article'}
-          </button>
+          <div className="flex items-center gap-2">
+            {provider && (
+              <Badge variant={provider === 'groq' ? 'accent' : 'warning'} size="sm">
+                {provider === 'groq' ? 'GROQ' : 'GEMINI'}
+              </Badge>
+            )}
+            <button
+              onClick={analyze}
+              disabled={loading}
+              className="px-3 py-1.5 rounded-lg bg-[var(--accent)] text-white text-xs font-semibold hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              {loading ? 'Analyzing...' : suggestions ? 'Re-analyze' : 'Analyze Article'}
+            </button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -90,7 +101,7 @@ export default function AIEditorTools() {
         {loading && (
           <div className="flex items-center gap-3 py-4 justify-center text-[var(--muted)]">
             <div className="w-4 h-4 rounded-full border-2 border-[var(--accent)] border-t-transparent animate-spin" />
-            <span className="text-sm">Generating suggestions with Gemini...</span>
+            <span className="text-sm">Generating suggestions with AI...</span>
           </div>
         )}
 
@@ -166,9 +177,14 @@ export default function AIEditorTools() {
         )}
 
         {!suggestions && !loading && (
-          <p className="text-sm text-center text-[var(--muted)] py-4">
-            Click &ldquo;Analyze Article&rdquo; to generate AI-powered suggestions for headlines, SEO, and tags.
-          </p>
+          <div className="text-center py-4 space-y-2">
+            <p className="text-sm text-[var(--muted)]">
+              Click &ldquo;Analyze Article&rdquo; to generate AI-powered suggestions for headlines, SEO, and tags.
+            </p>
+            <p className="text-[0.65rem] text-[var(--muted)]">
+              Routes to Groq LLaMA 70B (primary) with Gemini Flash fallback
+            </p>
+          </div>
         )}
       </CardContent>
     </Card>

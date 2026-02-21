@@ -12,7 +12,7 @@ const URGENCY_CONFIG = {
 } as const
 
 export default function DigestPage() {
-  const { topCategories } = usePersonalization()
+  const { topCategories, loaded } = usePersonalization()
   const [digest, setDigest] = useState<AIDigest | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -25,9 +25,9 @@ export default function DigestPage() {
   const timeStr = now.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' })
 
   useEffect(() => {
-    if (topCategories.length > 0) generateDigest()
+    if (loaded) generateDigest()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topCategories.length])
+  }, [loaded])
 
   const generateDigest = async () => {
     setLoading(true)
@@ -46,6 +46,12 @@ export default function DigestPage() {
         category: a.attributes.category?.data?.attributes?.name || 'General',
         slug: a.attributes.slug,
       }))
+
+      if (topArticles.length === 0) {
+        setError('No articles available right now. Check back soon.')
+        setLoading(false)
+        return
+      }
 
       const res = await fetch('/api/ai/digest', {
         method: 'POST',
@@ -88,23 +94,28 @@ export default function DigestPage() {
             <span className="text-[var(--accent)]">Briefing</span>
           </h1>
           <p className="text-sm text-[var(--muted)]">
-            Personalised for your interests · Powered by Gemini · Updates twice daily
+            Personalised for your interests · Powered by Groq + Gemini · Updates twice daily
             {cached && <span className="ml-2 text-[var(--accent)]">· Cached</span>}
           </p>
+          {topCategories.length === 0 && loaded && (
+            <p className="text-xs text-[var(--accent)] mt-1">
+              Showing general briefing · Read articles to personalise your digest
+            </p>
+          )}
         </div>
 
-        {/* No profile yet */}
-        {topCategories.length === 0 && !loading && (
+        {/* No digest and no error — waiting or empty */}
+        {!loading && !digest && !error && loaded && (
           <div className="text-center py-12 px-6 rounded-xl bg-[var(--surface)] border border-[var(--border)]">
             <div className="text-4xl mb-4">📰</div>
             <h3
               className="text-xl font-semibold text-[var(--text)] mb-2"
               style={{ fontFamily: 'var(--font-headline)' }}
             >
-              Read a few articles first
+              No articles available
             </h3>
             <p className="text-sm text-[var(--muted)] mb-6 max-w-sm mx-auto">
-              Your digest personalises based on what you read. Browse some articles and come back.
+              We couldn&apos;t find enough articles to generate your digest right now. Check back soon.
             </p>
             <Link
               href="/"
@@ -119,7 +130,7 @@ export default function DigestPage() {
         {loading && (
           <div className="text-center py-12">
             <div className="w-10 h-10 rounded-full border-3 border-[var(--border)] border-t-[var(--accent)] animate-spin mx-auto mb-4" />
-            <p className="text-sm text-[var(--muted)]">Gemini is crafting your briefing...</p>
+            <p className="text-sm text-[var(--muted)]">AI is crafting your briefing...</p>
           </div>
         )}
 

@@ -284,7 +284,7 @@ export default function Navbar({ categories }: NavbarProps) {
               {/* ── Scrollable content ── */}
               <div className="flex-1 overflow-y-auto">
                 {/* Search */}
-                <div className="px-5 pt-5 pb-3">
+                <div className="px-5 pt-4 pb-2">
                   <form onSubmit={handleDrawerSearch}>
                     <div className="relative">
                       <input
@@ -292,7 +292,7 @@ export default function Navbar({ categories }: NavbarProps) {
                         value={drawerSearch}
                         onChange={(e) => setDrawerSearch(e.target.value)}
                         placeholder="Search articles..."
-                        className="w-full h-11 pl-10 pr-4 text-sm rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] transition-all placeholder:text-[var(--muted)]"
+                        className="w-full h-9 pl-10 pr-4 text-sm rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] transition-all placeholder:text-[var(--muted)]"
                       />
                       <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]">
                         <NavIcon name="search" />
@@ -302,8 +302,8 @@ export default function Navbar({ categories }: NavbarProps) {
                 </div>
 
                 {/* Category chips */}
-                <div className="px-5 pb-4">
-                  <div className="flex flex-wrap gap-2">
+                <div className="px-5 pb-2">
+                  <div className="flex flex-wrap gap-1.5">
                     <Link
                       href="/"
                       onClick={closeDrawer}
@@ -339,21 +339,21 @@ export default function Navbar({ categories }: NavbarProps) {
                 </div>
 
                 {/* ── Your reading ── */}
-                <div className="px-5 py-3">
-                  <h3 className="text-[0.6rem] uppercase tracking-[0.15em] text-[var(--muted)] font-semibold mb-2">
+                <div className="px-5 py-2">
+                  <h3 className="text-[0.6rem] uppercase tracking-[0.15em] text-[var(--muted)] font-semibold mb-1">
                     Your Reading
                   </h3>
                   <Link
                     href="/saved"
                     onClick={closeDrawer}
-                    className={`flex items-center gap-3 px-3.5 py-3 rounded-lg transition-all ${
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all ${
                       pathname === '/saved'
                         ? 'bg-[var(--accent-light)] text-[var(--accent)]'
                         : 'text-[var(--text)] hover:bg-[var(--surface)]'
                     }`}
                   >
-                    <div className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--surface)]">
-                      <NavIcon name="bookmark" size={14} />
+                    <div className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--surface)]">
+                      <NavIcon name="bookmark" size={13} />
                     </div>
                     <span className="flex-1 text-sm font-medium">Saved Articles</span>
                     {savedCount > 0 && (
@@ -365,14 +365,14 @@ export default function Navbar({ categories }: NavbarProps) {
                   <Link
                     href="/digest"
                     onClick={closeDrawer}
-                    className={`flex items-center gap-3 px-3.5 py-3 rounded-lg transition-all ${
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all ${
                       pathname === '/digest'
                         ? 'bg-[var(--accent-light)] text-[var(--accent)]'
                         : 'text-[var(--text)] hover:bg-[var(--surface)]'
                     }`}
                   >
-                    <div className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--surface)]">
-                      <NavIcon name="sparkles" size={14} />
+                    <div className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--surface)]">
+                      <NavIcon name="sparkles" size={13} />
                     </div>
                     <span className="flex-1 text-sm font-medium">AI Digest</span>
                     <span className="text-[0.55rem] font-bold bg-[var(--accent)] text-white px-1.5 py-0.5 rounded-full">
@@ -382,10 +382,10 @@ export default function Navbar({ categories }: NavbarProps) {
                   <Link
                     href="/search?sort=trending"
                     onClick={closeDrawer}
-                    className="flex items-center gap-3 px-3.5 py-3 rounded-lg text-[var(--text)] hover:bg-[var(--surface)] transition-all"
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[var(--text)] hover:bg-[var(--surface)] transition-all"
                   >
-                    <div className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--surface)]">
-                      <NavIcon name="trending" size={14} />
+                    <div className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--surface)]">
+                      <NavIcon name="trending" size={13} />
                     </div>
                     <span className="flex-1 text-sm font-medium">Trending Now</span>
                     <span className="text-[var(--muted)]">
@@ -395,7 +395,7 @@ export default function Navbar({ categories }: NavbarProps) {
                 </div>
 
                 {/* ── Local info (prayer + weather for mobile) ── */}
-                <div className="mx-5 px-4 py-3 rounded-lg bg-[var(--surface)] border border-[var(--border)]">
+                <div className="mx-5 my-1 px-4 py-2 rounded-lg bg-[var(--surface)] border border-[var(--border)]">
                   <div className="flex items-center justify-between">
                     <PrayerTimeWidget />
                     <span className="text-[var(--border)]">·</span>
@@ -404,15 +404,15 @@ export default function Navbar({ categories }: NavbarProps) {
                 </div>
 
                 {/* ── Explore ── */}
-                <div className="px-5 py-4">
-                  <h3 className="text-[0.6rem] uppercase tracking-[0.15em] text-[var(--muted)] font-semibold mb-2">
+                <div className="px-5 py-2">
+                  <h3 className="text-[0.6rem] uppercase tracking-[0.15em] text-[var(--muted)] font-semibold mb-1">
                     Explore
                   </h3>
                   <nav className="space-y-0.5">
                     <Link
                       href="/search"
                       onClick={closeDrawer}
-                      className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm transition-all ${
+                      className={`flex items-center gap-3 px-3.5 py-2 rounded-lg text-sm transition-all ${
                         pathname === '/search'
                           ? 'bg-[var(--accent-light)] text-[var(--accent)] font-medium'
                           : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)]'
@@ -424,7 +424,7 @@ export default function Navbar({ categories }: NavbarProps) {
                     <Link
                       href="/plans"
                       onClick={closeDrawer}
-                      className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm transition-all ${
+                      className={`flex items-center gap-3 px-3.5 py-2 rounded-lg text-sm transition-all ${
                         pathname === '/plans'
                           ? 'bg-[var(--accent-light)] text-[var(--accent)] font-medium'
                           : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)]'
@@ -437,7 +437,7 @@ export default function Navbar({ categories }: NavbarProps) {
                     <Link
                       href="/api-docs"
                       onClick={closeDrawer}
-                      className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm transition-all ${
+                      className={`flex items-center gap-3 px-3.5 py-2 rounded-lg text-sm transition-all ${
                         pathname === '/api-docs'
                           ? 'bg-[var(--accent-light)] text-[var(--accent)] font-medium'
                           : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)]'
@@ -449,7 +449,7 @@ export default function Navbar({ categories }: NavbarProps) {
                     <Link
                       href="/architecture"
                       onClick={closeDrawer}
-                      className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm transition-all ${
+                      className={`flex items-center gap-3 px-3.5 py-2 rounded-lg text-sm transition-all ${
                         pathname === '/architecture'
                           ? 'bg-[var(--accent-light)] text-[var(--accent)] font-medium'
                           : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)]'
@@ -465,7 +465,7 @@ export default function Navbar({ categories }: NavbarProps) {
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={closeDrawer}
-                        className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-all"
+                        className="flex items-center gap-3 px-3.5 py-2 rounded-lg text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-all"
                       >
                         <NavIcon name="dashboard" size={15} />
                         <span className="flex-1">CMS Admin</span>
@@ -479,13 +479,13 @@ export default function Navbar({ categories }: NavbarProps) {
               {/* ── Footer area (fixed at bottom) ── */}
               <div className="border-t border-[var(--border)] bg-[var(--surface)]/50">
                 {/* Theme toggle */}
-                <div className="px-5 py-3">
+                <div className="px-5 py-2">
                   <button
                     onClick={toggleTheme}
-                    className="flex items-center gap-3 w-full px-3.5 py-2.5 rounded-lg hover:bg-[var(--surface)] transition-all"
+                    className="flex items-center gap-3 w-full px-3.5 py-2 rounded-lg hover:bg-[var(--surface)] transition-all"
                   >
-                    <div className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--surface)]">
-                      <NavIcon name={isDark ? 'sun' : 'moon'} size={14} />
+                    <div className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--surface)]">
+                      <NavIcon name={isDark ? 'sun' : 'moon'} size={13} />
                     </div>
                     <span className="flex-1 text-sm text-[var(--text)] text-left font-medium">
                       {isDark ? 'Light mode' : 'Dark mode'}
@@ -501,13 +501,13 @@ export default function Navbar({ categories }: NavbarProps) {
                 </div>
 
                 {/* Account section */}
-                <div className="px-5 pb-5">
+                <div className="px-5 pb-3">
                   {isAuthenticated ? (
                     <div className="space-y-2">
                       <Link
                         href="/account"
                         onClick={closeDrawer}
-                        className="flex items-center gap-3 px-3.5 py-3 rounded-lg bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--accent)] transition-all"
+                        className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--accent)] transition-all"
                       >
                         <div className="w-9 h-9 flex items-center justify-center rounded-full bg-[var(--accent)] text-white text-sm font-bold">
                           {(user?.name || 'U')[0].toUpperCase()}

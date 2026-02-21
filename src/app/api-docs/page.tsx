@@ -136,7 +136,7 @@ stripe trigger checkout.session.completed \\
   --webhook-endpoint="/api/stripe/webhook"`,
     tryUrl: null,
   },
-  // ── AI Intelligence Endpoints (Gemini 2.5 Flash) ──
+  // ── AI Intelligence Endpoints (Groq LLaMA 3.1 70B + Gemini 2.5 Flash) ──
   {
     id: 'ai-analyze',
     method: 'POST',
@@ -271,7 +271,7 @@ export default function ApiDocsPage() {
           API Reference
         </h1>
         <p className="text-sm sm:text-base text-[var(--muted)] mb-6">
-          Interactive documentation for The Adam News API — 14 endpoints including 5 AI-powered routes. Powered by Strapi CMS, Next.js, and Google Gemini.
+          Interactive documentation for The Adam News API — 14 endpoints including 5 AI-powered routes. Multi-model AI with Groq LLaMA 3.1 70B + Gemini 2.5 Flash, automatic failover, and Redis caching.
         </p>
 
         {/* Mobile endpoint selector */}
@@ -433,7 +433,7 @@ export default function ApiDocsPage() {
         </div>
 
         <ArchCallout
-          apiCall="Strapi REST API + Next.js API Routes + Gemini AI Routes"
+          apiCall="Strapi REST API + Next.js API Routes + Multi-Model AI (Groq + Gemini)"
           caching="GET endpoints: Redis cache-aside. AI endpoints: Redis cache (7-30 day TTL). Mutations: no cache."
           auth="Public (read + AI), Bearer token (write), Webhook secret (revalidate), Stripe signature (webhooks)"
           rationale="API Docs page is SSG — built once at deploy. Live playground makes real HTTP requests. AI routes include self-imposed rate limiting (8 req/min)."

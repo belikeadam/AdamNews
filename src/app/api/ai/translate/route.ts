@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { callGeminiCached, parseGeminiJSON, RateLimitError } from '@/lib/ai/gemini'
+import { callAICached, parseGeminiJSON, RateLimitError } from '@/lib/ai/router'
 import { parseBody, AITranslateSchema } from '@/lib/validations'
 import { rateLimit, getClientIp, rateLimitHeaders } from '@/lib/rate-limit'
 import { logger } from '@/lib/logger'
@@ -36,7 +36,8 @@ export async function POST(request: Request) {
 Title: ${title}
 Content: ${content.slice(0, 8000)}`
 
-    const result = await callGeminiCached<AITranslation>(
+    const result = await callAICached<AITranslation>(
+      'translate',
       `ai:translate:${slug}:${targetLang}`,
       prompt,
       CACHE_TTL,
@@ -50,10 +51,11 @@ Content: ${content.slice(0, 8000)}`
       slug,
       targetLang,
       cached: result.cached,
+      provider: result.provider,
     })
 
     return NextResponse.json(
-      { data: result.data, cached: result.cached },
+      { data: result.data, cached: result.cached, provider: result.provider },
       { headers: rateLimitHeaders(rl) }
     )
   } catch (err) {
@@ -65,9 +67,10 @@ Content: ${content.slice(0, 8000)}`
     }
 
     logger.error('AI translate failed', { slug, targetLang, error: String(err) })
+    // Return fallback so the UI doesn't silently freeze
     return NextResponse.json(
-      { error: 'Translation failed' },
-      { status: 500, headers: rateLimitHeaders(rl) }
+      { data: { title, content, lang: targetLang }, cached: false, fallback: true },
+      { status: 200, headers: rateLimitHeaders(rl) }
     )
   }
 }

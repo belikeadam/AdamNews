@@ -11,10 +11,10 @@ interface ArticleToolbarProps {
 
 type FontSize = 'small' | 'medium' | 'large'
 
-const FONT_SIZES: Record<FontSize, string> = {
-  small: '1rem',
-  medium: '1.125rem',
-  large: '1.3rem',
+const FONT_SCALES: Record<FontSize, string> = {
+  small: '0.9',
+  medium: '1',
+  large: '1.15',
 }
 
 export default function ArticleToolbar({ slug, title, excerpt, category }: ArticleToolbarProps) {
@@ -27,7 +27,7 @@ export default function ArticleToolbar({ slug, title, excerpt, category }: Artic
   useEffect(() => {
     // Restore font size preference
     const stored = localStorage.getItem('articleFontSize') as FontSize | null
-    if (stored && FONT_SIZES[stored]) {
+    if (stored && FONT_SCALES[stored]) {
       setFontSize(stored)
       applyFontSize(stored)
     }
@@ -48,7 +48,7 @@ export default function ArticleToolbar({ slug, title, excerpt, category }: Artic
   const applyFontSize = (size: FontSize) => {
     const prose = document.querySelector('.prose')
     if (prose) {
-      (prose as HTMLElement).style.fontSize = FONT_SIZES[size]
+      (prose as HTMLElement).style.setProperty('--article-font-scale', FONT_SCALES[size])
     }
   }
 

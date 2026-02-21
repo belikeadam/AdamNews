@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { callGeminiCached, parseGeminiJSON, RateLimitError } from '@/lib/ai/gemini'
+import { callAICached, parseGeminiJSON, RateLimitError } from '@/lib/ai/router'
 import { parseBody, AIAnalyzeSchema } from '@/lib/validations'
 import { rateLimit, getClientIp, rateLimitHeaders } from '@/lib/rate-limit'
 import { logger } from '@/lib/logger'
@@ -70,7 +70,8 @@ export async function POST(request: Request) {
 Title: ${title}
 Article: ${content.slice(0, 6000)}`
 
-    const result = await callGeminiCached<AIAnalysis>(
+    const result = await callAICached<AIAnalysis>(
+      'analyze',
       `ai:analysis:${slug}`,
       prompt,
       CACHE_TTL,
@@ -80,10 +81,11 @@ Article: ${content.slice(0, 6000)}`
     logger.request('POST', '/api/ai/analyze', 200, Date.now() - start, {
       slug,
       cached: result.cached,
+      provider: result.provider,
     })
 
     return NextResponse.json(
-      { data: result.data, cached: result.cached },
+      { data: result.data, cached: result.cached, provider: result.provider },
       { headers: rateLimitHeaders(rl) }
     )
   } catch (err) {

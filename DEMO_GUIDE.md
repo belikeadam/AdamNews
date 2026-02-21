@@ -204,15 +204,15 @@ This is where reviewers can see the full technical implementation.
 5. Webhook fires automatically → frontend revalidates
 6. Verify the change appears at https://adam-news.vercel.app within seconds
 
-### Step 9: AI Intelligence Features (Powered by Gemini)
+### Step 9: AI Intelligence Features (Multi-Model: Groq + Gemini)
 
-Adam News includes a full AI intelligence layer powered by Google Gemini 2.5 Flash. Every feature is production-grade with Redis caching, rate limiting, and graceful error handling. Total cost: **RM 0** (free tier).
+Adam News includes a full AI intelligence layer powered by a **multi-model routing architecture** — Groq LLaMA 3.1 70B (primary for analysis, chat, digest, suggestions) and Google Gemini 2.5 Flash (primary for translation, fallback for all). Every feature is production-grade with Redis caching, per-provider rate limiting, automatic failover, and graceful error handling. Total cost: **RM 0** (dual free tiers).
 
 #### 9.1: AI Article Intelligence Panel
 
 1. Open any article (e.g., click a Technology article from homepage)
 2. Look for the **"AI Intelligence"** panel below the article toolbar
-3. Click to expand — watch Gemini analyze the article in real-time
+3. Click to expand — watch the AI analyze the article in real-time
 4. You'll see:
    - **TL;DR** — one-sentence summary
    - **Key Takeaways** — 3-5 bullet points
@@ -221,7 +221,7 @@ Adam News includes a full AI intelligence layer powered by Google Gemini 2.5 Fla
    - **Reading Level** — grade level indicator
    - **Entities** — people, organizations, locations mentioned
    - **Topics** — auto-generated topic tags
-5. Close and re-open — notice **"CACHED"** badge (served from Redis, no Gemini call)
+5. Close and re-open — notice **"CACHED"** badge (served from Redis, no AI call)
 6. Try on another article — see different analysis
 
 #### 9.2: Language Toggle (BM <-> EN)
@@ -254,7 +254,7 @@ Adam News includes a full AI intelligence layer powered by Google Gemini 2.5 Fla
 
 1. Read 3-4 articles from different categories (this builds your interest profile)
 2. Navigate to **`/digest`**
-3. Watch Gemini generate a personalized morning briefing
+3. Watch the AI generate a personalized morning briefing
 4. You'll see:
    - Curated headline for today
    - Personalized intro mentioning your interests
@@ -279,15 +279,15 @@ Adam News includes a full AI intelligence layer powered by Google Gemini 2.5 Fla
 
 | Requirement | Implementation | Where to Verify |
 |------------|----------------|-----------------|
-| **AI Content Analysis** | Gemini-powered article intelligence (summary, sentiment, entities, fact-check) | Expand AI panel on any article page |
+| **AI Content Analysis** | Multi-model AI article intelligence (summary, sentiment, entities, fact-check) | Expand AI panel on any article page |
 | **Multilingual AI** | BM <-> EN translation for Malaysia's diverse audience | Language toggle on article page |
 | **Text-to-Speech** | Browser-native Web Speech API with EN/BM voices | Audio Mode on article page |
 | **Conversational AI** | Grounded Q&A chat scoped to article content | Chat widget on article page |
 | **AI Personalization** | Interest-based morning digest | `/digest` page |
 | **AI Editorial Tools** | Headline optimizer, SEO suggestions, auto-tags | Admin dashboard |
 | **Production Caching** | All AI responses cached in Redis (7-30 day TTL) | Second request shows "CACHED" badge |
-| **Rate Limiting** | Self-imposed 8 req/min cap (Gemini free tier) | Rate limit countdown on heavy usage |
-| **Cost: RM 0** | Entire AI layer runs on Google Gemini free tier | All features work without billing |
+| **Rate Limiting** | Per-provider rate limits (Groq 25 RPM, Gemini 8 RPM) | Rate limit countdown on heavy usage |
+| **Cost: RM 0** | Entire AI layer runs on Groq + Gemini free tiers | All features work without billing |
 
 ---
 
@@ -335,9 +335,9 @@ These patterns directly address senior full-stack requirements:
 | Stripe webhook verification | `src/app/api/stripe/webhook/route.ts` | HMAC signature verification for payment security |
 | Structured JSON logging | `src/lib/logger.ts` | Production monitoring with timing and metadata |
 | Content pipeline | Strapi → Webhook → Revalidate → CDN | End-to-end editorial workflow |
-| AI cache-aside with Gemini | `src/lib/ai/gemini.ts` | Redis → Gemini → Redis pattern with rate limiting |
-| Structured AI output | `src/app/api/ai/*/route.ts` | Gemini JSON mode with typed responses and Zod validation |
-| Graceful AI fallback | `src/app/api/ai/analyze/route.ts` | Never crashes — returns fallback data on Gemini errors |
+| Multi-model AI routing | `src/lib/ai/router.ts` | Task-based model selection with automatic failover (Groq → Gemini) |
+| Structured AI output | `src/app/api/ai/*/route.ts` | JSON mode with typed responses and Zod validation |
+| Graceful AI fallback | `src/app/api/ai/analyze/route.ts` | Never crashes — falls back to secondary provider, then static data |
 | Browser-native TTS | `src/components/article/AudioMode.tsx` | Web Speech API for zero-cost article reading |
 
 ---
@@ -364,7 +364,7 @@ Database:  PostgreSQL 16 (Railway)
 Cache:     Upstash Redis (cache-aside + rate limiting + AI cache)
 Payments:  Stripe Checkout (subscriptions + webhooks)
 Auth:      NextAuth v5 (JWT + OAuth + credentials)
-AI:        Google Gemini 2.5 Flash (analysis, translation, chat, digest, editor tools)
+AI:        Groq LLaMA 3.1 70B + Gemini 2.5 Flash (multi-model router with failover)
 Audio:     Web Speech API (browser-native TTS, zero cost)
 Testing:   Vitest (41 unit tests) + Playwright (22 E2E tests), GitHub Actions CI
 DevOps:    Docker Compose (4 services), Vercel + Railway deploy
