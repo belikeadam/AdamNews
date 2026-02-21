@@ -59,13 +59,21 @@ export default function HomeClient({
   const secondaryArticles = filtered.slice(1, 4)
   const remainingArticles = filtered.slice(4)
 
-  // Group remaining by category (keep slug for links)
+  // Group remaining by category (keep slug for links), premium articles first
   const categoryGroups = new Map<string, { slug: string; articles: Article[] }>()
   for (const article of remainingArticles) {
     const catName = article.attributes.category?.data?.attributes?.name || 'General'
     const catSlug = article.attributes.category?.data?.attributes?.slug || ''
     if (!categoryGroups.has(catName)) categoryGroups.set(catName, { slug: catSlug, articles: [] })
     categoryGroups.get(catName)!.articles.push(article)
+  }
+  // Sort each category: premium first, then by publish date
+  for (const [, group] of categoryGroups) {
+    group.articles.sort((a, b) => {
+      if (a.attributes.premium && !b.attributes.premium) return -1
+      if (!a.attributes.premium && b.attributes.premium) return 1
+      return 0
+    })
   }
 
   return (
