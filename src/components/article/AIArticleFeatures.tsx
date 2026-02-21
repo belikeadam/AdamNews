@@ -6,6 +6,7 @@ import AIInsightsPanel from './AIInsightsPanel'
 import LanguageToggle from './LanguageToggle'
 import AudioMode from './AudioMode'
 import ArticleChat from './ArticleChat'
+import { dispatchTranslation } from './TranslatableContent'
 import { usePersonalization } from '@/hooks/usePersonalization'
 
 interface Props {
@@ -92,7 +93,7 @@ export default function AIArticleFeatures({
   const [displayLang, setDisplayLang] = useState<'en' | 'ms'>('en')
   const [displayContent, setDisplayContent] = useState(body)
   const [displayTitle, setDisplayTitle] = useState(title)
-  const { trackRead } = usePersonalization()
+  const { trackRead, setLang, profile } = usePersonalization()
 
   // Track reading for personalization
   useEffect(() => {
@@ -110,6 +111,8 @@ export default function AIArticleFeatures({
     setDisplayTitle(newTitle)
     setDisplayContent(newContent)
     setDisplayLang(lang)
+    // Notify TranslatableTitle + TranslatableBody to update the article page
+    dispatchTranslation({ title: newTitle, content: newContent, lang })
   }
 
   return (
@@ -121,6 +124,8 @@ export default function AIArticleFeatures({
           originalTitle={title}
           originalContent={body}
           onTranslate={handleTranslate}
+          preferredLang={profile?.preferredLang}
+          onLangChange={setLang}
         />
       </div>
 

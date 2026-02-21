@@ -16,6 +16,7 @@ import ShareRow from '@/components/article/ShareRow'
 import AdSlot from '@/components/shared/AdSlot'
 import LiveReaderCount from '@/components/shared/LiveReaderCount'
 import AIArticleFeatures from '@/components/article/AIArticleFeatures'
+import { TranslatableTitle, TranslatableBody } from '@/components/article/TranslatableContent'
 import { getArticleBySlug, getRelatedArticles } from '@/lib/api/strapi'
 import { formatDate, relativeTime, getArticleCoverUrl } from '@/lib/utils'
 import { getCategoryColor } from '@/constants/categories'
@@ -185,7 +186,7 @@ export default async function ArticlePage({ params }: PageProps) {
           className="text-2xl sm:text-3xl lg:text-[2.75rem] font-bold text-[var(--text)] mb-3 sm:mb-5 leading-tight tracking-tight"
           style={{ fontFamily: 'var(--font-headline)' }}
         >
-          {a.title}
+          <TranslatableTitle>{a.title}</TranslatableTitle>
         </h1>
 
         {/* Byline */}
@@ -260,12 +261,14 @@ export default async function ArticlePage({ params }: PageProps) {
         )}
 
         {/* Article body */}
-        <ArticleBody
-          body={a.body}
-          premium={a.premium}
-          hasAccess={hasAccess}
-          excerpt={a.excerpt}
-        />
+        <TranslatableBody>
+          <ArticleBody
+            body={a.body}
+            premium={a.premium}
+            hasAccess={hasAccess}
+            excerpt={a.excerpt}
+          />
+        </TranslatableBody>
 
         {/* Paywall gate for premium articles without access */}
         {a.premium && !hasAccess && <PaywallGate />}

@@ -57,7 +57,7 @@ This section maps each core requirement to **where you can verify it** in the li
 |------------|----------------|-----------------|
 | **REST API** | 14 API routes (4 GET, 10 POST) including 5 AI endpoints | `/api-docs` — click "Try it" on any endpoint |
 | **Authentication (JWT)** | NextAuth v5 with stateless JWT sessions, OAuth + credentials | Login as Admin → inspect cookies (next-auth.session-token) |
-| **Authorization (RBAC)** | Free/Standard/Premium/Admin roles with tiered access | Login as Reader → premium articles show paywall gate |
+| **Authorization (RBAC)** | Free/Standard/Premium/Admin roles with tiered access; AI features gated on premium articles | Login as Reader → premium articles show paywall gate + locked AI panel |
 | **Rate limiting** | Token bucket algorithm via Upstash Redis on all API routes | `/api-docs` — check response headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining` |
 | **Input validation** | Zod schemas on all POST API routes | `/api-docs` — see schema definitions for each endpoint |
 | **Structured logging** | JSON logger with timing, metadata, IP anonymization | `/architecture` → "Key Patterns" section shows implementation |
@@ -98,7 +98,7 @@ This section maps each core requirement to **where you can verify it** in the li
 | Requirement | Implementation | Where to Verify |
 |------------|----------------|-----------------|
 | **Docker** | 4-service docker-compose (Postgres, Redis, Strapi, Next.js) | See `docker-compose.yml` in repo |
-| **CI/CD** | GitHub Actions (type check, lint, 41 tests) → Vercel auto-deploy | See `.github/workflows/deploy.yml` in repo |
+| **CI/CD** | GitHub Actions (type check, lint, 41 unit tests) → Vercel auto-deploy | See `.github/workflows/deploy.yml` in repo |
 | **Vercel Edge CDN** | Global distribution with ISR caching | Site loads fast worldwide |
 | **Railway hosting** | Strapi + PostgreSQL on Railway | CMS Admin is always accessible |
 
@@ -273,6 +273,24 @@ Adam News includes a full AI intelligence layer powered by a **multi-model routi
    - **Suggested excerpt** optimized for click-through
 4. This demonstrates editorial AI tools — critical for media companies managing 30+ brands
 
+#### 9.7: AI Premium Gating
+
+AI features respect the subscription paywall — they're free on free articles, locked on premium articles for unpaid users.
+
+1. **Open a premium article while logged out** (or as Reader)
+   - You'll see the `AIFeaturesLocked` panel instead of real AI features
+   - Shows a 2x2 preview grid of all 4 AI features at 50% opacity (teaser)
+   - **"Upgrade Plan"** button links to `/plans`
+   - **"Already subscribed? Sign in"** link
+   - The article body is NOT sent to AI components — no API calls made
+2. **Sign in as Admin** (premium plan) → navigate to the same premium article
+   - AI features are fully unlocked — Intelligence panel, Translation, Audio, Chat all work
+   - The locked panel disappears
+3. **Open any free article** (logged in or out)
+   - AI features work for everyone — no gating on free content
+4. **Check the homepage** — AI showcase shows "Upgrade for premium article AI →" footer
+5. **Check `/plans`** — each plan tier lists its AI feature access level
+
 ---
 
 ## AI Requirements Coverage
@@ -287,6 +305,7 @@ Adam News includes a full AI intelligence layer powered by a **multi-model routi
 | **AI Editorial Tools** | Headline optimizer, SEO suggestions, auto-tags | Admin dashboard |
 | **Production Caching** | All AI responses cached in Redis (7-30 day TTL) | Second request shows "CACHED" badge |
 | **Rate Limiting** | Per-provider rate limits (Groq 25 RPM, Gemini 8 RPM) | Rate limit countdown on heavy usage |
+| **Premium Gating** | AI locked on premium articles for free users; body never sent to AI components | Open premium article logged out → see `AIFeaturesLocked` panel |
 | **Cost: RM 0** | Entire AI layer runs on Groq + Gemini free tiers | All features work without billing |
 
 ---
@@ -366,7 +385,7 @@ Payments:  Stripe Checkout (subscriptions + webhooks)
 Auth:      NextAuth v5 (JWT + OAuth + credentials)
 AI:        Groq LLaMA 3.3 70B + Gemini 2.5 Flash (multi-model router with failover)
 Audio:     Web Speech API (browser-native TTS, zero cost)
-Testing:   Vitest (41 unit tests) + Playwright (22 E2E tests), GitHub Actions CI
+Testing:   Vitest (41 unit tests) + Playwright (65 E2E tests across 5 suites), GitHub Actions CI
 DevOps:    Docker Compose (4 services), Vercel + Railway deploy
 ```
 

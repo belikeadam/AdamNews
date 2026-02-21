@@ -17,6 +17,7 @@ export default function DigestPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [cached, setCached] = useState(false)
+  const [fallbackArticles, setFallbackArticles] = useState<Array<{ title: string; excerpt: string; category: string; slug: string }>>([])
 
   const now = new Date()
   const dateStr = now.toLocaleDateString('en-MY', {
@@ -52,6 +53,9 @@ export default function DigestPage() {
         setLoading(false)
         return
       }
+
+      // Store for fallback if AI fails
+      setFallbackArticles(topArticles)
 
       const res = await fetch('/api/ai/digest', {
         method: 'POST',
@@ -134,9 +138,47 @@ export default function DigestPage() {
           </div>
         )}
 
-        {/* Error */}
+        {/* Error with fallback article list */}
         {error && (
-          <div className="text-center py-8 text-sm text-[var(--danger)]">{error}</div>
+          <div className="space-y-4">
+            <div className="text-center py-4 text-sm text-[var(--danger)]">{error}</div>
+            {fallbackArticles.length > 0 && (
+              <>
+                <div className="text-center">
+                  <p className="text-xs text-[var(--muted)] mb-4">Here are the latest articles while we fix the AI briefing:</p>
+                </div>
+                <div className="space-y-3">
+                  {fallbackArticles.map((article, i) => (
+                    <Link
+                      key={i}
+                      href={`/articles/${article.slug}`}
+                      className="group block p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)] hover:bg-[var(--surface-2)] transition-colors"
+                    >
+                      <div className="text-[0.6rem] font-bold text-[var(--muted)] uppercase tracking-wide mb-1">
+                        {article.category}
+                      </div>
+                      <div
+                        className="text-sm font-semibold text-[var(--text)] mb-1 group-hover:text-[var(--accent)] transition-colors"
+                        style={{ fontFamily: 'var(--font-headline)' }}
+                      >
+                        {article.title}
+                      </div>
+                      <div className="text-xs text-[var(--muted)] leading-relaxed line-clamp-2">
+                        {article.excerpt}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+                <button
+                  onClick={generateDigest}
+                  disabled={loading}
+                  className="w-full py-3 rounded-xl border border-[var(--border)] text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  ↻ Retry AI briefing
+                </button>
+              </>
+            )}
+          </div>
         )}
 
         {/* Digest Content */}

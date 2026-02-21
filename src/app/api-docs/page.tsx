@@ -141,8 +141,8 @@ stripe trigger checkout.session.completed \\
     id: 'ai-analyze',
     method: 'POST',
     path: '/api/ai/analyze',
-    description: 'AI-powered article analysis. Returns TL;DR summary, key takeaways, sentiment, fact-check score, reading level, entities, and topics. Results cached in Redis for 30 days.',
-    auth: 'Public',
+    description: 'AI-powered article analysis. Returns TL;DR summary, key takeaways, sentiment, fact-check score, reading level, entities, and topics. Content-gated on premium articles — body not sent for unauthorized users. Results cached in Redis for 7 days.',
+    auth: 'Content-gated (rate-limited)',
     params: [
       { name: 'title', type: 'string', required: true, description: 'Article title' },
       { name: 'content', type: 'string', required: true, description: 'Article body (HTML or plain text)' },
@@ -157,8 +157,8 @@ stripe trigger checkout.session.completed \\
     id: 'ai-translate',
     method: 'POST',
     path: '/api/ai/translate',
-    description: 'Translate article content between English and Bahasa Malaysia using Gemini. Translates both title and body. Cached in Redis for 30 days.',
-    auth: 'Public',
+    description: 'Translate article content between English and Bahasa Malaysia. Translates both title and body. Content-gated on premium articles. Cached in Redis for 30 days.',
+    auth: 'Content-gated (rate-limited)',
     params: [
       { name: 'title', type: 'string', required: true, description: 'Article title to translate' },
       { name: 'content', type: 'string', required: true, description: 'Article body to translate' },
@@ -174,12 +174,13 @@ stripe trigger checkout.session.completed \\
     id: 'ai-chat',
     method: 'POST',
     path: '/api/ai/chat',
-    description: 'Ask questions about a specific article. AI responses are grounded to article content only — no hallucination. Streams response via ReadableStream.',
-    auth: 'Public',
+    description: 'Ask questions about a specific article. AI responses are grounded to article content only — no hallucination. Content-gated on premium articles. Cached in Redis for 24 hours.',
+    auth: 'Content-gated (rate-limited)',
     params: [
       { name: 'question', type: 'string', required: true, description: 'User question about the article' },
       { name: 'content', type: 'string', required: true, description: 'Article body for grounding' },
       { name: 'title', type: 'string', required: true, description: 'Article title for context' },
+      { name: 'slug', type: 'string', required: true, description: 'Article slug (cache key)' },
     ],
     curl: `curl -X POST "/api/ai/chat" \\
   -H "Content-Type: application/json" \\
@@ -205,16 +206,17 @@ stripe trigger checkout.session.completed \\
     id: 'ai-suggest',
     method: 'POST',
     path: '/api/ai/suggest',
-    description: 'AI editor tools for article optimization. Returns alternative headlines with engagement scores, SEO suggestions, auto-generated tags, and excerpt suggestion. For editorial dashboards.',
-    auth: 'Public',
+    description: 'AI editor tools for article optimization. Returns alternative headlines with engagement scores, SEO suggestions, auto-generated tags, and excerpt suggestion. Admin dashboard only.',
+    auth: 'Admin (rate-limited)',
     params: [
       { name: 'title', type: 'string', required: true, description: 'Current article headline' },
       { name: 'content', type: 'string', required: true, description: 'Article body content' },
       { name: 'slug', type: 'string', required: true, description: 'Article slug (cache key)' },
+      { name: 'excerpt', type: 'string', required: false, description: 'Article excerpt for optimization' },
     ],
     curl: `curl -X POST "/api/ai/suggest" \\
   -H "Content-Type: application/json" \\
-  -d '{"title":"Original Headline","content":"<p>Article body</p>","slug":"my-article"}'`,
+  -d '{"title":"Original Headline","content":"<p>Article body</p>","slug":"my-article","excerpt":"Short summary"}'`,
     tryUrl: null,
   },
 ]

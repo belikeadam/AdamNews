@@ -20,9 +20,10 @@ interface Props {
   slug: string
   title: string
   content: string
+  articleUrl?: string
 }
 
-export default function AIInsightsPanel({ slug, title, content }: Props) {
+export default function AIInsightsPanel({ slug, title, content, articleUrl }: Props) {
   const [analysis, setAnalysis] = useState<AIAnalysis | null>(null)
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(() => {
@@ -36,7 +37,9 @@ export default function AIInsightsPanel({ slug, title, content }: Props) {
     return false
   })
   const [cached, setCached] = useState(false)
+  const [provider, setProvider] = useState('')
   const [retryIn, setRetryIn] = useState(0)
+  const [shared, setShared] = useState(false)
 
   // Auto-fetch when panel is open on mount (first visit auto-expand)
   useEffect(() => {
@@ -68,9 +71,10 @@ export default function AIInsightsPanel({ slug, title, content }: Props) {
         return
       }
 
-      const { data, cached: wasCached } = await res.json()
+      const { data, cached: wasCached, provider: prov } = await res.json()
       setAnalysis(data)
       setCached(wasCached)
+      if (prov) setProvider(prov)
     } catch {
       setAnalysis(null)
     } finally {
@@ -101,7 +105,7 @@ export default function AIInsightsPanel({ slug, title, content }: Props) {
           <div className="text-left">
             <div className="text-sm font-semibold text-[var(--text)]">AI Intelligence</div>
             <div className="text-[0.65rem] text-[var(--muted)] tracking-wide">
-              GEMINI 2.5 FLASH {cached ? '· CACHED' : ''}
+              {provider ? provider.toUpperCase() : 'AI POWERED'} {cached ? '· CACHED' : ''}
             </div>
           </div>
         </div>
@@ -140,6 +144,29 @@ export default function AIInsightsPanel({ slug, title, content }: Props) {
                 <p className="text-sm text-[var(--text)] leading-relaxed italic">
                   &ldquo;{analysis.tldr}&rdquo;
                 </p>
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={() => {
+                      const url = articleUrl || `${window.location.origin}/articles/${slug}`
+                      const text = `${analysis.tldr}\n\nRead more: ${url}`
+                      navigator.clipboard.writeText(text).then(() => {
+                        setShared(true)
+                        setTimeout(() => setShared(false), 2000)
+                      })
+                    }}
+                    className="text-[0.65rem] px-2 py-0.5 rounded border border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)] transition-colors cursor-pointer"
+                  >
+                    {shared ? '✓ Copied' : 'Copy summary'}
+                  </button>
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(`${analysis.tldr}\n\nRead more: ${articleUrl || `${typeof window !== 'undefined' ? window.location.origin : ''}/articles/${slug}`}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[0.65rem] px-2 py-0.5 rounded border border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)] transition-colors"
+                  >
+                    Share on WhatsApp
+                  </a>
+                </div>
               </div>
 
               {/* Key Takeaways */}

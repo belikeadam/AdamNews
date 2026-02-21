@@ -21,6 +21,25 @@ const SUGGESTED_QUESTIONS = [
   'Who are the key people mentioned?',
 ]
 
+const CHAT_STORAGE_KEY = 'ai-chat-history'
+
+function loadChatHistory(slug: string): { messages: Message[]; count: number } {
+  try {
+    const raw = localStorage.getItem(`${CHAT_STORAGE_KEY}:${slug}`)
+    if (raw) {
+      const data = JSON.parse(raw)
+      return { messages: data.messages || [], count: data.count || 0 }
+    }
+  } catch { /* ignore */ }
+  return { messages: [], count: 0 }
+}
+
+function saveChatHistory(slug: string, messages: Message[], count: number) {
+  try {
+    localStorage.setItem(`${CHAT_STORAGE_KEY}:${slug}`, JSON.stringify({ messages, count }))
+  } catch { /* ignore */ }
+}
+
 export default function ArticleChat({ slug, title, content }: Props) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -28,6 +47,23 @@ export default function ArticleChat({ slug, title, content }: Props) {
   const [open, setOpen] = useState(false)
   const [questionsAsked, setQuestionsAsked] = useState(0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // Restore chat history from localStorage on mount
+  useEffect(() => {
+    const history = loadChatHistory(slug)
+    if (history.messages.length > 0) {
+      setMessages(history.messages)
+      setQuestionsAsked(history.count)
+      setOpen(true)
+    }
+  }, [slug])
+
+  // Persist chat history when messages change
+  useEffect(() => {
+    if (messages.length > 0) {
+      saveChatHistory(slug, messages, questionsAsked)
+    }
+  }, [messages, questionsAsked, slug])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })

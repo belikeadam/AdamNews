@@ -63,8 +63,8 @@ const STACK = [
   {
     layer: 'Testing',
     tech: 'Vitest + Playwright',
-    detail: '63 tests — 41 unit + 22 E2E (Desktop + Mobile Chrome)',
-    badge: '63 passing',
+    detail: '106 tests — 41 unit + 65 E2E across 5 suites (Desktop + Mobile Chrome)',
+    badge: '106 passing',
     badgeVariant: 'success' as const,
   },
   {
@@ -105,11 +105,11 @@ const API_ROUTES = [
   { method: 'POST', path: '/api/articles/[slug]/views', auth: 'Public', purpose: 'View counter increment' },
   { method: 'POST', path: '/api/analytics', auth: 'Public', purpose: 'Scroll depth / read time beacon' },
   { method: 'GET', path: '/api/health', auth: 'Public', purpose: 'System health + dependency checks' },
-  { method: 'POST', path: '/api/ai/analyze', auth: 'Rate-limited', purpose: 'AI article analysis (summary, sentiment, entities)' },
-  { method: 'POST', path: '/api/ai/translate', auth: 'Rate-limited', purpose: 'Translate article (EN ↔ BM)' },
-  { method: 'POST', path: '/api/ai/chat', auth: 'Rate-limited', purpose: 'Ask questions about an article' },
+  { method: 'POST', path: '/api/ai/analyze', auth: 'Content-gated + rate-limited', purpose: 'AI article analysis (summary, sentiment, entities)' },
+  { method: 'POST', path: '/api/ai/translate', auth: 'Content-gated + rate-limited', purpose: 'Translate article (EN ↔ BM)' },
+  { method: 'POST', path: '/api/ai/chat', auth: 'Content-gated + rate-limited', purpose: 'Ask questions about an article' },
   { method: 'POST', path: '/api/ai/digest', auth: 'Rate-limited', purpose: 'Personalised morning digest' },
-  { method: 'POST', path: '/api/ai/suggest', auth: 'Rate-limited', purpose: 'AI editor tools (headlines, SEO, tags)' },
+  { method: 'POST', path: '/api/ai/suggest', auth: 'Admin + rate-limited', purpose: 'AI editor tools (headlines, SEO, tags)' },
 ]
 
 const KEY_PATTERNS = [
@@ -390,7 +390,7 @@ export default function ArchitecturePage() {
 ├── constants/            # meta, plans, nav
 ├── hooks/                # useAuth, useBookmarks, usePersonalization
 ├── types/                # Strapi, auth, AI types
-└── __tests__/            # Vitest (41 unit) + Playwright (22 E2E)`}
+└── __tests__/            # Vitest (41 unit) + Playwright (65 E2E)`}
             </pre>
           </CardContent>
         </Card>

@@ -40,6 +40,11 @@ export async function POST(request: Request) {
   const { slug, title, content } = parsed.data
 
   try {
+    // Calculate reading time saved from word count (avg 200 wpm reading speed)
+    const wordCount = content.split(/\s+/).length
+    const fullReadMin = Math.ceil(wordCount / 200)
+    const readTimeSaved = `${Math.max(1, fullReadMin - 1)} min`
+
     const prompt = `You are a senior news analyst. Analyze this article and respond ONLY with valid JSON matching this exact structure (no markdown, no code fences):
 
 {
@@ -63,8 +68,7 @@ export async function POST(request: Request) {
     "organizations": ["Org Name"],
     "locations": ["Place Name"]
   },
-  "topics": ["topic1", "topic2", "topic3"],
-  "readTimeSaved": "3 min"
+  "topics": ["topic1", "topic2", "topic3"]
 }
 
 Title: ${title}
@@ -78,6 +82,9 @@ Article: ${content.slice(0, 6000)}`
       (text) => parseGeminiJSON<AIAnalysis>(text)
     )
 
+    // Override AI-generated readTimeSaved with calculated value
+    const data = { ...result.data, readTimeSaved }
+
     logger.request('POST', '/api/ai/analyze', 200, Date.now() - start, {
       slug,
       cached: result.cached,
@@ -85,7 +92,7 @@ Article: ${content.slice(0, 6000)}`
     })
 
     return NextResponse.json(
-      { data: result.data, cached: result.cached, provider: result.provider },
+      { data, cached: result.cached, provider: result.provider },
       { headers: rateLimitHeaders(rl) }
     )
   } catch (err) {

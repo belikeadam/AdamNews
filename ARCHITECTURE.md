@@ -53,7 +53,7 @@ The Adam News is a full-stack digital newspaper platform that demonstrates end-t
 | **Caching** | Redis (Upstash), ISR tag-based revalidation, cache-aside pattern |
 | **DevOps** | Docker Compose (4 services), GitHub Actions CI, Vercel + Railway deploy |
 | **AI Intelligence** | Google Gemini 2.5 Flash — article analysis, translation, chat, digest, editor tools |
-| **Testing** | Vitest (41 unit tests) + Playwright (22 E2E tests) covering utils, API routes, rendering, and AI features |
+| **Testing** | Vitest (41 unit tests) + Playwright (65 E2E tests across 5 suites) covering utils, API routes, rendering, AI features, navigation, mobile, and dashboard |
 | **SEO** | Dynamic sitemap, robots.txt, OpenGraph, Twitter Cards, JSON-LD schema |
 | **Design** | Tailwind CSS v4, dark mode, responsive, editorial typography (Playfair Display) |
 
@@ -62,7 +62,7 @@ The Adam News is a full-stack digital newspaper platform that demonstrates end-t
 - **67 articles** seeded with real tech news content (via Dev.to API)
 - **6 categories** (Technology, Business, Finance, Lifestyle, Science, General)
 - **40+ authors** with profiles and avatars
-- **63 tests** passing (41 unit tests + 22 E2E tests) across 4 test suites
+- **106 tests** passing (41 unit tests + 65 E2E tests) across 8 test suites
 - **73+ URLs** in sitemap (6 static + 67 dynamic)
 - **14 API routes** (4 GET, 10 POST) — including 5 AI endpoints and health check
 - **6 AI features** powered by Google Gemini 2.5 Flash (free tier, RM 0 cost)
@@ -349,6 +349,8 @@ Passwords stored as bcrypt hashes. Authentication via `bcrypt.compare()`.
 |----------|------|----------|---------|-------|
 | Browse articles | 5/month | Unlimited | Unlimited | Unlimited |
 | Premium articles | Blocked (paywall) | Full access | Full access | Full access |
+| AI on free articles | Yes | Yes | Yes | Yes |
+| AI on premium articles | Locked (upgrade CTA) | Full access | Full access | Full access |
 | Bookmarks | Yes | Yes | Yes | Yes |
 | Dashboard | No | No | No | Yes |
 | CMS Editor | No | No | No | Yes |
@@ -561,11 +563,11 @@ These are Strapi REST endpoints exposed through the CMS:
 | `POST` | `/api/analytics` | Public | Track scroll depth and read time |
 | `GET` | `/api/health` | Public | System health check (Strapi + Redis status) |
 | `GET/POST` | `/api/auth/[...nextauth]` | NextAuth | Authentication endpoints (CSRF, session, callback, signout) |
-| `POST` | `/api/ai/analyze` | Public (rate-limited) | AI article analysis — summary, sentiment, entities, fact-check |
-| `POST` | `/api/ai/translate` | Public (rate-limited) | Translate article between English and Bahasa Malaysia |
-| `POST` | `/api/ai/chat` | Public (rate-limited) | Ask questions about an article (grounded, no hallucination) |
+| `POST` | `/api/ai/analyze` | Content-gated + rate-limited | AI article analysis — summary, sentiment, entities, fact-check |
+| `POST` | `/api/ai/translate` | Content-gated + rate-limited | Translate article between English and Bahasa Malaysia |
+| `POST` | `/api/ai/chat` | Content-gated + rate-limited | Ask questions about an article (grounded, no hallucination) |
 | `POST` | `/api/ai/digest` | Public (rate-limited) | Generate personalized morning digest from reading interests |
-| `POST` | `/api/ai/suggest` | Public (rate-limited) | AI editor tools — headline alternatives, SEO tips, auto-tags |
+| `POST` | `/api/ai/suggest` | Admin (rate-limited) | AI editor tools — headline alternatives, SEO tips, auto-tags |
 
 **All POST routes** include:
 - **Rate limiting** via Upstash Redis (token bucket algorithm, fail-open)
@@ -695,7 +697,8 @@ type ArticlesResponse = StrapiCollectionResponse<ArticleAttributes>
 | `LanguageToggle` | BM ↔ EN toggle that translates article content via Gemini. Cached for 30 days. |
 | `AudioMode` | Text-to-speech reader using Web Speech API. Supports English and Malay voices. Zero API cost. |
 | `ArticleChat` | Compact chat widget for asking questions about the current article. Grounded responses (no hallucination). |
-| `AIArticleFeatures` | Client wrapper component that composes all AI features on the article page. |
+| `AIArticleFeatures` | Client wrapper component that composes all AI features on the article page. Gates premium articles based on user plan. |
+| `AIFeaturesLocked` | Upgrade CTA panel shown when unauthenticated/free users view premium articles. Shows 2x2 feature preview grid at 50% opacity with "Upgrade Plan" button. |
 
 ### Auth Components (`src/components/auth/`)
 
@@ -796,7 +799,7 @@ type ArticlesResponse = StrapiCollectionResponse<ArticleAttributes>
 - **@testing-library/react** 16.3.2 — React component testing
 - **@testing-library/jest-dom** 6.9.1 — DOM matchers
 
-### Test Suites (63 tests total: 41 unit + 22 E2E)
+### Test Suites (106 tests total: 41 unit + 65 E2E)
 
 **`src/__tests__/utils.test.ts`** — 26 tests
 - `cn()` — class merging, conditional classes, Tailwind conflict resolution
@@ -829,17 +832,40 @@ Uses `vi.resetModules()` + dynamic import to handle module-level constant cachin
 - Horizontal rules
 - HTML entity escaping in code blocks
 
-**`e2e/ai-features.spec.ts`** — 22 tests (11 scenarios x 2 browsers: Desktop Chrome + Mobile Chrome)
-
-E2E tests powered by Playwright covering all AI features:
-- Article page AI Intelligence panel (expand, loading, cached state)
-- Language toggle (EN/BM buttons visible, translation)
-- Audio Mode (listen button, waveform)
-- Article Chat widget (suggested questions)
-- AI API endpoints (analyze, translate, chat, suggest — valid responses)
+**`e2e/ai-features.spec.ts`** — 18 tests
+- Article page AI Intelligence panel on free articles (expand, loading, cached state)
+- Language toggle (EN/BM buttons visible, translation trigger, cached result)
+- Audio Mode (listen button visible on free articles)
+- Article Chat widget (suggested questions on free articles)
+- **Premium article locked panel** (unauthenticated users see `AIFeaturesLocked` with upgrade CTA)
+- **Premium article AI unlocked** (admin login → full AI features on premium articles)
+- AI API endpoints (analyze, translate, chat, suggest — valid responses, caching, long content)
 - Zod validation (empty body returns 400)
-- Digest page (loads briefing or "read articles first" state)
+- Digest page (loads briefing or "no articles available" state)
 - Dashboard AI Editor Tools (heading visible, analyze button)
+- Homepage AI showcase (upgrade CTA visible)
+- Plans page (AI features listed in plan tiers)
+
+**`e2e/dashboard.spec.ts`** — 16 tests
+- Admin login and dashboard access
+- KPI cards, sparkline charts, analytics
+- Article management table with status tabs
+- AI Editor Tools section
+
+**`e2e/navigation.spec.ts`** — 10 tests
+- Navbar links, category navigation
+- Breadcrumb navigation, footer links
+- Mobile navigation drawer
+
+**`e2e/demo-mode.spec.ts`** — 8 tests
+- Demo banner visibility and dismissal
+- Demo login buttons and descriptions
+- Login form stepper flow
+
+**`e2e/mobile.spec.ts`** — 13 tests
+- Mobile-specific responsive layout
+- Touch interactions, mobile nav
+- Mobile article reading experience
 
 ### Running Tests
 
@@ -848,6 +874,8 @@ npm test                    # Unit tests (Vitest, single run)
 npm run test:watch          # Unit tests (Vitest, watch mode)
 npx playwright test         # E2E tests (all specs)
 npx playwright test e2e/ai-features.spec.ts  # AI E2E tests only
+npx playwright test e2e/dashboard.spec.ts    # Dashboard E2E tests
+npx playwright test e2e/navigation.spec.ts   # Navigation E2E tests
 ```
 
 ---
@@ -1072,6 +1100,7 @@ AdamNews/
 - Strapi API token used for server-side requests only
 - Fallback: if token authentication fails (401/403), retries without token for public content
 - Premium content gated server-side (not just CSS hiding)
+- **AI premium gating**: Article body is never sent to AI client components for premium articles when user lacks access (empty string passed from server component). `AIFeaturesLocked` panel shown instead of real AI features — no AI API calls made.
 
 ---
 
@@ -1138,6 +1167,8 @@ AdamNews/
 ### Overview
 
 Adam News includes a production-grade AI intelligence layer powered by a **multi-model routing architecture** using Groq LLaMA 3.3 70B (primary) and Google Gemini 2.5 Flash (fallback). A provider-agnostic AI router selects the best model per task, with automatic failover and Redis caching. Total cost: **RM 0** (both free tiers).
+
+**Premium Content Gating**: AI features are freely available on all free articles. On premium articles, AI features are locked behind a subscription — unauthenticated and free-plan users see an `AIFeaturesLocked` upgrade panel instead. The article body is never sent to AI client components for gated users (empty string from server component), ensuring premium content cannot be summarized or analyzed without paying.
 
 ### AI Features
 

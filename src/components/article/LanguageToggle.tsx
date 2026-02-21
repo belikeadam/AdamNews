@@ -9,13 +9,25 @@ interface Props {
   originalTitle: string
   originalContent: string
   onTranslate: (title: string, content: string, lang: Lang) => void
+  preferredLang?: Lang
+  onLangChange?: (lang: Lang) => void
 }
 
-export default function LanguageToggle({ slug, originalTitle, originalContent, onTranslate }: Props) {
+export default function LanguageToggle({ slug, originalTitle, originalContent, onTranslate, preferredLang, onLangChange }: Props) {
   const [activeLang, setActiveLang] = useState<Lang>('en')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [translationCache, setTranslationCache] = useState<Record<string, { title: string; content: string }>>({})
+  const [autoApplied, setAutoApplied] = useState(false)
+
+  // Auto-apply preferred language on mount
+  useEffect(() => {
+    if (preferredLang && preferredLang !== 'en' && !autoApplied) {
+      setAutoApplied(true)
+      switchTo(preferredLang)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preferredLang])
 
   // Auto-clear error after 3s
   useEffect(() => {
@@ -32,6 +44,7 @@ export default function LanguageToggle({ slug, originalTitle, originalContent, o
     if (lang === 'en') {
       setActiveLang('en')
       onTranslate(originalTitle, originalContent, 'en')
+      onLangChange?.(lang)
       return
     }
 
@@ -64,6 +77,7 @@ export default function LanguageToggle({ slug, originalTitle, originalContent, o
           setTranslationCache(prev => ({ ...prev, [lang]: body.data }))
           setActiveLang(lang)
           onTranslate(body.data.title, body.data.content, lang)
+          onLangChange?.(lang)
         }
       } else {
         setError('Translation unavailable right now')
