@@ -24,12 +24,15 @@ module.exports = {
       'api::category.category.findOne',
       'api::author.author.find',
       'api::author.author.findOne',
-      // Write permissions (seed script in development)
+      // Full CRUD permissions (editorial workflow + seed script)
       'api::article.article.create',
+      'api::article.article.update',
       'api::article.article.delete',
       'api::category.category.create',
+      'api::category.category.update',
       'api::category.category.delete',
       'api::author.author.create',
+      'api::author.author.update',
       'api::author.author.delete',
     ]
 
