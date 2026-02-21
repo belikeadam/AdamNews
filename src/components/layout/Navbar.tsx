@@ -23,6 +23,7 @@ const TOOL_LINKS = [
   { href: '/search', label: 'Search & Archive', icon: 'search' },
   { href: '/plans', label: 'Plans & Pricing', icon: 'credit-card' },
   { href: '/api-docs', label: 'API Documentation', icon: 'code' },
+  { href: '/architecture', label: 'Architecture', icon: 'dashboard' },
 ] as const
 
 // Reusable icon component

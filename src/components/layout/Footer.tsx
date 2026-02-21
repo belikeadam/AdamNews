@@ -23,6 +23,7 @@ export default function Footer() {
         <Link href="/" className="hover:text-[var(--text)] transition-colors">Home</Link>
         <Link href="/plans" className="hover:text-[var(--text)] transition-colors">Plans</Link>
         <Link href="/api-docs" className="hover:text-[var(--text)] transition-colors">API Docs</Link>
+        <Link href="/architecture" className="hover:text-[var(--text)] transition-colors">Architecture</Link>
         <Link href="/login" className="hover:text-[var(--text)] transition-colors">Sign In</Link>
       </div>
 
