@@ -6,6 +6,7 @@ import Link from 'next/link'
 import ArticleCard from '@/components/reader/ArticleCard'
 import CategoryFilter from '@/components/reader/CategoryFilter'
 import AdSlot from '@/components/shared/AdSlot'
+import NewsletterSignup from '@/components/shared/NewsletterSignup'
 import { getArticleCoverUrl, formatDate, truncate } from '@/lib/utils'
 import type { Article, Category } from '@/types'
 
@@ -121,25 +122,7 @@ export default function HomeClient({
               <AdSlot position="sidebar" className="mb-6" />
 
               {/* Newsletter */}
-              <div className="bg-[var(--surface)] p-6 border border-[var(--border)]">
-                <h3
-                  className="text-lg font-semibold mb-2"
-                  style={{ fontFamily: 'var(--font-headline)' }}
-                >
-                  The Morning Briefing
-                </h3>
-                <p className="text-sm text-[var(--muted)] mb-4">
-                  Get the day&apos;s top stories delivered every morning.
-                </p>
-                <input
-                  type="email"
-                  placeholder="your@email.com"
-                  className="w-full h-10 px-3 border border-[var(--border)] bg-[var(--bg)] text-sm mb-2 focus:outline-none focus:border-[var(--text)]"
-                />
-                <button className="w-full h-10 bg-[var(--text)] text-[var(--bg)] text-sm font-medium hover:opacity-90 transition-opacity">
-                  Subscribe
-                </button>
-              </div>
+              <NewsletterSignup />
             </aside>
           </div>
 

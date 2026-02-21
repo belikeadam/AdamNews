@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useSession } from 'next-auth/react'
 import Card, { CardContent } from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
@@ -8,7 +9,9 @@ import { PLANS } from '@/constants/plans'
 import { cn } from '@/lib/utils'
 
 export default function PlansPage() {
+  const { status } = useSession()
   const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly')
+  const [loading, setLoading] = useState<string | null>(null)
 
   const handleSubscribe = async (planId: string) => {
     if (planId === 'free') {
@@ -16,19 +19,30 @@ export default function PlansPage() {
       return
     }
 
-    const res = await fetch('/api/stripe/checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ planId, billing }),
-    })
-
-    const data = await res.json()
-    if (data.error) {
-      alert(data.error)
+    // Redirect unauthenticated users to login first
+    if (status !== 'authenticated') {
+      window.location.href = `/login?callbackUrl=/plans`
       return
     }
-    if (data.url) {
-      window.location.href = data.url
+
+    setLoading(planId)
+    try {
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId, billing }),
+      })
+
+      const data = await res.json()
+      if (data.error) {
+        alert(data.error)
+        return
+      }
+      if (data.url) {
+        window.location.href = data.url
+      }
+    } finally {
+      setLoading(null)
     }
   }
 
@@ -128,8 +142,9 @@ export default function PlansPage() {
                   className="w-full"
                   size="lg"
                   onClick={() => handleSubscribe(plan.id)}
+                  disabled={loading !== null}
                 >
-                  {plan.cta}
+                  {loading === plan.id ? 'Redirecting…' : plan.cta}
                 </Button>
               </CardContent>
             </Card>
