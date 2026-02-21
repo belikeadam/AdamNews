@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
+import { getCategoryColor } from '@/constants/categories'
 import type { Article } from '@/types'
 
 interface BreakingNewsBarProps {
@@ -27,6 +28,9 @@ export default function BreakingNewsBar({ articles, interval = 4000 }: BreakingN
 
   const current = articles[currentIndex]
   const { attributes: a } = current
+  const catSlug = a.category?.data?.attributes?.slug
+  const catName = a.category?.data?.attributes?.name
+  const colors = getCategoryColor(catSlug)
 
   return (
     <div className="bg-[var(--accent)] text-white relative overflow-hidden">
@@ -37,10 +41,12 @@ export default function BreakingNewsBar({ articles, interval = 4000 }: BreakingN
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
           </span>
-          <span className="text-xs font-bold uppercase tracking-wider hidden sm:inline">Trending</span>
+          <span className="text-xs font-bold uppercase tracking-wider hidden sm:inline">
+            {currentIndex === 0 ? 'Breaking' : 'Trending'}
+          </span>
         </span>
 
-        {/* Auto-rotating headline */}
+        {/* Category dot + Auto-rotating headline */}
         <div className="flex-1 min-w-0 relative h-5 overflow-hidden">
           <AnimatePresence mode="wait">
             <motion.div
@@ -49,8 +55,13 @@ export default function BreakingNewsBar({ articles, interval = 4000 }: BreakingN
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.3, ease: 'easeInOut' }}
-              className="absolute inset-0"
+              className="absolute inset-0 flex items-center gap-2"
             >
+              {catName && (
+                <span className="text-[0.55rem] font-bold uppercase tracking-wider text-white/50 hidden sm:inline flex-shrink-0">
+                  {catName}
+                </span>
+              )}
               <Link
                 href={`/articles/${a.slug}`}
                 className="block truncate text-sm text-white/90 hover:text-white transition-colors leading-5"

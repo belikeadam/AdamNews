@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from 'react'
 
-export default function ReadingProgress() {
+interface ReadingProgressProps {
+  color?: string
+}
+
+export default function ReadingProgress({ color }: ReadingProgressProps) {
   const [progress, setProgress] = useState(0)
 
   useEffect(() => {
@@ -21,8 +25,8 @@ export default function ReadingProgress() {
   return (
     <div className="fixed top-[2.75rem] left-0 right-0 z-50 h-[2px] bg-transparent pointer-events-none">
       <div
-        className="h-full bg-[var(--accent)] transition-[width] duration-75 ease-linear"
-        style={{ width: `${progress}%` }}
+        className="h-full transition-[width] duration-75 ease-linear"
+        style={{ width: `${progress}%`, backgroundColor: color || 'var(--accent)' }}
       />
     </div>
   )

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
  * Quick E2E verification — checks all pages return 200 and key content is present.
+ * Updated for mobile-first UX overhaul (Malaysian features, animations, drawer navigation).
  */
 
 const BASE = process.env.BASE_URL || 'http://localhost:3000'
@@ -12,7 +13,7 @@ let pass = 0
 let fail = 0
 const results = []
 
-async function check(name, url, { status = 200, contains = [], method = 'GET' } = {}) {
+async function check(name, url, { status = 200, contains = [], notContains = [], method = 'GET' } = {}) {
   try {
     const res = await fetch(url, { method, redirect: 'manual' })
     const code = res.status
@@ -23,11 +24,18 @@ async function check(name, url, { status = 200, contains = [], method = 'GET' } 
       return
     }
 
-    if (contains.length > 0) {
+    if (contains.length > 0 || notContains.length > 0) {
       const body = await res.text()
       for (const term of contains) {
         if (!body.includes(term)) {
           results.push({ name, status: 'FAIL', detail: `Missing: "${term}"` })
+          fail++
+          return
+        }
+      }
+      for (const term of notContains) {
+        if (body.includes(term)) {
+          results.push({ name, status: 'FAIL', detail: `Should NOT contain: "${term}"` })
           fail++
           return
         }
@@ -50,6 +58,7 @@ async function run() {
   await check('Login page', `${BASE}/login`, { contains: ['Welcome back'] })
   await check('Plans page', `${BASE}/plans`, { contains: ['Choose your plan'] })
   await check('Search page', `${BASE}/search`, { contains: ['Search'] })
+  await check('Trending search page', `${BASE}/search?sort=trending`)
   await check('Saved page', `${BASE}/saved`)
   await check('Account page', `${BASE}/account`)
   await check('Architecture page', `${BASE}/architecture`)
@@ -58,6 +67,25 @@ async function run() {
   await check('Privacy page', `${BASE}/privacy`)
   await check('Terms page', `${BASE}/terms`)
   await check('404 page', `${BASE}/nonexistent-page-xyz`, { status: 404 })
+
+  // ── UX Overhaul Checks ──
+  // Verify MobileNav is removed (no fixed bottom-0 tab bar)
+  await check('No MobileNav (bottom bar removed)', `${BASE}/`, {
+    notContains: ['MobileNav']
+  })
+
+  // Verify BreakingNewsBar renders on homepage
+  await check('Breaking News Bar on homepage', `${BASE}/`, {
+    contains: ['Trending']
+  })
+
+  // Verify viewport meta tag
+  await check('Viewport meta', `${BASE}/`, { contains: ['viewport'] })
+
+  // Verify welcome section for unauthenticated users
+  await check('Welcome section on homepage', `${BASE}/`, {
+    contains: ['Welcome to The Adam News']
+  })
 
   // ── API Routes ──
   await check('Auth API', `${BASE}/api/auth/providers`)
@@ -82,8 +110,17 @@ async function run() {
       }
     }
     if (articles.length > 0) {
-      await check('Article has body content', `${BASE}/articles/${articles[0].attributes.slug}`, {
+      const firstSlug = articles[0].attributes.slug
+      await check('Article has body content', `${BASE}/articles/${firstSlug}`, {
         contains: ['prose']
+      })
+      // Verify WhatsApp share on article pages
+      await check('WhatsApp share on article', `${BASE}/articles/${firstSlug}`, {
+        contains: ['wa.me']
+      })
+      // Verify reading progress bar on article
+      await check('Reading progress on article', `${BASE}/articles/${firstSlug}`, {
+        contains: ['ReadingProgress']
       })
     }
   } catch (err) {
@@ -91,8 +128,36 @@ async function run() {
     fail++
   }
 
-  // ── Responsive meta tags ──
-  await check('Viewport meta', `${BASE}/`, { contains: ['viewport'] })
+  // ── Malaysian Features ──
+  // Prayer time API check
+  try {
+    const prayerRes = await fetch('https://api.waktusolat.app/v2/solat/WLY01')
+    if (prayerRes.ok) {
+      results.push({ name: 'Prayer Time API (JAKIM)', status: 'PASS' })
+      pass++
+    } else {
+      results.push({ name: 'Prayer Time API (JAKIM)', status: 'FAIL', detail: `Status ${prayerRes.status}` })
+      fail++
+    }
+  } catch (err) {
+    results.push({ name: 'Prayer Time API (JAKIM)', status: 'FAIL', detail: err.message })
+    fail++
+  }
+
+  // Weather API check
+  try {
+    const weatherRes = await fetch('https://api.open-meteo.com/v1/forecast?latitude=3.1412&longitude=101.6865&current=temperature_2m,weathercode&timezone=Asia/Kuala_Lumpur')
+    if (weatherRes.ok) {
+      results.push({ name: 'Weather API (Open-Meteo)', status: 'PASS' })
+      pass++
+    } else {
+      results.push({ name: 'Weather API (Open-Meteo)', status: 'FAIL', detail: `Status ${weatherRes.status}` })
+      fail++
+    }
+  } catch (err) {
+    results.push({ name: 'Weather API (Open-Meteo)', status: 'FAIL', detail: err.message })
+    fail++
+  }
 
   // ── Print results ──
   console.log('  ' + '─'.repeat(60))

@@ -10,6 +10,7 @@ import { signOut } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import PrayerTimeWidget from '@/components/widgets/PrayerTimeWidget'
 import WeatherWidget from '@/components/widgets/WeatherWidget'
+import { getCategoryColor } from '@/constants/categories'
 
 interface NavbarProps {
   categories?: { name: string; slug: string }[]
@@ -194,11 +195,25 @@ export default function Navbar({ categories }: NavbarProps) {
               <Link href="/" className={`px-4 py-3 text-sm whitespace-nowrap border-b-2 transition-colors ${pathname === '/' && !activeCategory ? 'text-[var(--text)] border-[var(--text)]' : 'text-[var(--muted)] border-transparent hover:text-[var(--text)] hover:border-[var(--text)]'}`}>
                 Home
               </Link>
-              {cats.map((cat) => (
-                <Link key={cat.slug} href={`/?category=${cat.slug}`} className={`px-4 py-3 text-sm whitespace-nowrap border-b-2 transition-colors ${activeCategory === cat.slug ? 'text-[var(--text)] border-[var(--text)]' : 'text-[var(--muted)] border-transparent hover:text-[var(--text)] hover:border-[var(--text)]'}`}>
-                  {cat.name}
-                </Link>
-              ))}
+              {cats.map((cat) => {
+                const colors = getCategoryColor(cat.slug)
+                const isActive = activeCategory === cat.slug
+                return (
+                  <Link
+                    key={cat.slug}
+                    href={`/?category=${cat.slug}`}
+                    className={`px-4 py-3 text-sm whitespace-nowrap border-b-2 transition-colors flex items-center gap-1.5 ${
+                      isActive
+                        ? 'text-[var(--text)]'
+                        : 'text-[var(--muted)] border-transparent hover:text-[var(--text)]'
+                    }`}
+                    style={{ borderBottomColor: isActive ? colors.primary : 'transparent' }}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colors.primary }} />
+                    {cat.name}
+                  </Link>
+                )
+              })}
               {TOOL_LINKS.map((link) => (
                 <Link key={link.href} href={link.href} className={`px-4 py-3 text-sm whitespace-nowrap border-b-2 transition-colors ${pathname === link.href ? 'text-[var(--text)] border-[var(--text)]' : 'text-[var(--muted)] border-transparent hover:text-[var(--text)] hover:border-[var(--text)]'}`}>
                   {link.label.split(' & ')[0]}
@@ -298,20 +313,26 @@ export default function Navbar({ categories }: NavbarProps) {
                     >
                       Home
                     </Link>
-                    {cats.map((cat) => (
-                      <Link
-                        key={cat.slug}
-                        href={`/?category=${cat.slug}`}
-                        onClick={closeDrawer}
-                        className={`px-3.5 py-1.5 text-xs font-medium rounded-full border transition-all ${
-                          activeCategory === cat.slug
-                            ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
-                            : 'border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] hover:border-[var(--text)]'
-                        }`}
-                      >
-                        {cat.name}
-                      </Link>
-                    ))}
+                    {cats.map((cat) => {
+                      const colors = getCategoryColor(cat.slug)
+                      const isActive = activeCategory === cat.slug
+                      return (
+                        <Link
+                          key={cat.slug}
+                          href={`/?category=${cat.slug}`}
+                          onClick={closeDrawer}
+                          className={`px-3.5 py-1.5 text-xs font-medium rounded-full border transition-all flex items-center gap-1.5 ${
+                            isActive
+                              ? 'text-white'
+                              : 'border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] hover:border-[var(--text)]'
+                          }`}
+                          style={isActive ? { backgroundColor: colors.primary, borderColor: colors.primary } : undefined}
+                        >
+                          {!isActive && <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colors.primary }} />}
+                          {cat.name}
+                        </Link>
+                      )
+                    })}
                   </div>
                 </div>
 

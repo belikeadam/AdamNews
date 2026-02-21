@@ -115,10 +115,20 @@ async function fetchDevToArticleBody(id: number): Promise<string> {
 // ── Main seed logic ─────────────────────────────────────────────────
 
 const CATEGORIES = [
-  { name: 'Technology', slug: 'technology', color: '#1a1a1a', description: 'Software, hardware, and innovation' },
-  { name: 'Business', slug: 'business', color: '#1a1a1a', description: 'Startups, careers, and the tech economy' },
-  { name: 'Science', slug: 'science', color: '#1a1a1a', description: 'Data science, AI research, and discovery' },
-  { name: 'General', slug: 'general', color: '#1a1a1a', description: 'Community discussions and news' },
+  { name: 'Technology', slug: 'technology', color: '#2563eb', description: 'Software, hardware, and innovation' },
+  { name: 'Business', slug: 'business', color: '#059669', description: 'Startups, careers, and the tech economy' },
+  { name: 'Science', slug: 'science', color: '#7c3aed', description: 'Data science, AI research, and discovery' },
+  { name: 'General', slug: 'general', color: '#8b0000', description: 'Community discussions and news' },
+]
+
+const AUTHOR_ROLES = [
+  'Senior Technology Reporter',
+  'Business Editor',
+  'Staff Writer',
+  'Contributing Analyst',
+  'Tech Correspondent',
+  'Features Writer',
+  'Senior Correspondent',
 ]
 
 async function seed() {
@@ -127,12 +137,14 @@ async function seed() {
   // 1. Fetch articles from Dev.to across multiple tags
   console.log('Fetching articles from Dev.to API...')
   const tagQueries = [
-    { tag: 'webdev', count: 8 },
-    { tag: 'ai', count: 6 },
-    { tag: 'career', count: 5 },
-    { tag: 'programming', count: 6 },
-    { tag: 'productivity', count: 4 },
-    { tag: 'datascience', count: 4 },
+    { tag: 'webdev', count: 15 },
+    { tag: 'ai', count: 12 },
+    { tag: 'career', count: 10 },
+    { tag: 'programming', count: 12 },
+    { tag: 'productivity', count: 8 },
+    { tag: 'datascience', count: 8 },
+    { tag: 'discuss', count: 8 },
+    { tag: 'news', count: 6 },
   ]
 
   const allArticles: DevToArticle[] = []
@@ -190,12 +202,14 @@ async function seed() {
   // 5. Create authors in Strapi
   console.log('\nCreating authors...')
   const authorIds: Record<string, number> = {}
-  for (const author of uniqueAuthors) {
+  for (let ai = 0; ai < uniqueAuthors.length; ai++) {
+    const author = uniqueAuthors[ai]
     try {
+      const role = AUTHOR_ROLES[ai % AUTHOR_ROLES.length]
       const res = await strapiPost('/api/authors', {
         name: author.name || author.username,
-        role: 'Contributing Writer',
-        bio: `Writer on Dev.to (@${author.username})`,
+        role,
+        bio: `${role} covering technology, business, and innovation. Previously at Dev.to.`,
         email: `${author.username}@devto.community`,
       })
       authorIds[author.username] = res.data.id
@@ -227,7 +241,7 @@ async function seed() {
       premium: isPremium,
       trending: isTrending,
       readTime: `${a.reading_time_minutes || 3} min read`,
-      views: a.positive_reactions_count * 10 + Math.floor(Math.random() * 500),
+      views: Math.floor(a.positive_reactions_count * 50 + Math.random() * 2000 + (isTrending ? 5000 : 0) + (isPremium ? 1000 : 0)),
       tags: a.tag_list,
       coverUrl: a.cover_image || a.social_image || null,
       category: categoryIds[category] || categoryIds['Technology'],
