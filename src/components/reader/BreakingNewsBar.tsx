@@ -67,7 +67,7 @@ export default function BreakingNewsBar({ articles, interval = 4000 }: BreakingN
             {currentIndex + 1}/{articles.length}
           </span>
           <Link
-            href="/search"
+            href="/search?sort=trending"
             className="text-[0.65rem] font-medium text-white/70 hover:text-white transition-colors whitespace-nowrap"
           >
             View all

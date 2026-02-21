@@ -59,12 +59,13 @@ export default function HomeClient({
   const secondaryArticles = filtered.slice(1, 4)
   const remainingArticles = filtered.slice(4)
 
-  // Group remaining by category
-  const categoryGroups = new Map<string, Article[]>()
+  // Group remaining by category (keep slug for links)
+  const categoryGroups = new Map<string, { slug: string; articles: Article[] }>()
   for (const article of remainingArticles) {
     const catName = article.attributes.category?.data?.attributes?.name || 'General'
-    if (!categoryGroups.has(catName)) categoryGroups.set(catName, [])
-    categoryGroups.get(catName)!.push(article)
+    const catSlug = article.attributes.category?.data?.attributes?.slug || ''
+    if (!categoryGroups.has(catName)) categoryGroups.set(catName, { slug: catSlug, articles: [] })
+    categoryGroups.get(catName)!.articles.push(article)
   }
 
   return (
@@ -144,41 +145,60 @@ export default function HomeClient({
             {/* Sidebar */}
             <aside className="hidden md:block pl-8">
               <h3 className="section-label mb-4">Most Read</h3>
-              <div className="space-y-5">
-                {trending.slice(0, 5).map((article, i) => (
-                  <ScrollReveal key={article.id} delay={i * 0.05}>
-                    <Link
-                      href={`/articles/${article.attributes.slug}`}
-                      className="flex gap-3 group"
-                    >
-                      <span
-                        className="text-2xl font-bold text-[var(--border)] leading-none mt-0.5 group-hover:text-[var(--accent)] transition-colors"
-                        style={{ fontFamily: 'var(--font-headline)' }}
+              <div className="space-y-4">
+                {trending.slice(0, 5).map((article, i) => {
+                  const ta = article.attributes
+                  const thumbUrl = getArticleCoverUrl(
+                    ta.cover?.data?.attributes?.formats?.thumbnail?.url || ta.cover?.data?.attributes?.url,
+                    ta.slug,
+                    200,
+                    200,
+                    ta.coverUrl
+                  )
+                  return (
+                    <ScrollReveal key={article.id} delay={i * 0.05}>
+                      <Link
+                        href={`/articles/${ta.slug}`}
+                        className="flex gap-3 group"
                       >
-                        {i + 1}
-                      </span>
-                      <div>
-                        <p
-                          className="text-sm font-semibold text-[var(--text)] line-clamp-2 group-hover:text-[var(--accent)] transition-colors"
+                        <span
+                          className="text-2xl font-bold text-[var(--border)] leading-none mt-0.5 group-hover:text-[var(--accent)] transition-colors"
                           style={{ fontFamily: 'var(--font-headline)' }}
                         >
-                          {article.attributes.title}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="byline">
-                            {article.attributes.readTime || '3 min read'}
-                          </span>
-                          {article.attributes.views > 0 && (
-                            <span className="text-xs text-[var(--muted)] flex items-center gap-1">
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                              {article.attributes.views >= 1000 ? `${(article.attributes.views / 1000).toFixed(1)}k` : article.attributes.views}
+                          {i + 1}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className="text-sm font-semibold text-[var(--text)] line-clamp-2 group-hover:text-[var(--accent)] transition-colors"
+                            style={{ fontFamily: 'var(--font-headline)' }}
+                          >
+                            {ta.title}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="byline">
+                              {ta.readTime || '3 min read'}
                             </span>
-                          )}
+                            {ta.views > 0 && (
+                              <span className="text-xs text-[var(--muted)] flex items-center gap-1">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                {ta.views >= 1000 ? `${(ta.views / 1000).toFixed(1)}k` : ta.views}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </Link>
-                  </ScrollReveal>
-                ))}
+                        <div className="relative w-16 h-16 flex-shrink-0 overflow-hidden bg-[var(--surface-2)]">
+                          <Image
+                            src={thumbUrl}
+                            alt=""
+                            fill
+                            sizes="64px"
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                      </Link>
+                    </ScrollReveal>
+                  )
+                })}
               </div>
 
               <hr className="section-rule my-6" />
@@ -249,7 +269,7 @@ export default function HomeClient({
 
           {/* Category sections with density toggle */}
           {categoryGroups.size > 0 && (
-            <div className="flex items-center justify-between mt-10 mb-2">
+            <div className="flex items-center justify-between mt-10 mb-2 border-t border-[var(--border)] pt-6">
               <span className="text-xs text-[var(--muted)] uppercase tracking-wider font-medium">More Stories</span>
               <div className="flex items-center gap-1 bg-[var(--surface)] rounded p-0.5">
                 <button
@@ -272,19 +292,42 @@ export default function HomeClient({
             </div>
           )}
 
-          {Array.from(categoryGroups).map(([catName, catArticles]) => (
+          {Array.from(categoryGroups).map(([catName, { slug: catSlug, articles: catArticles }], catIdx) => (
             <section key={catName} className="mt-8">
               <ScrollReveal direction="left">
-                <div className="flex items-center gap-4 mb-6">
+                <div className="flex items-center gap-4 mb-5">
                   <h2 className="section-label whitespace-nowrap">{catName}</h2>
                   <hr className="flex-1 border-t border-[var(--border)]" />
+                  {catSlug && (
+                    <Link
+                      href={`/search?category=${catSlug}`}
+                      className="text-xs text-[var(--muted)] hover:text-[var(--accent)] transition-colors whitespace-nowrap"
+                    >
+                      View all &rarr;
+                    </Link>
+                  )}
                 </div>
               </ScrollReveal>
               {density === 'compact' ? (
                 <div className="space-y-0 divide-y divide-[var(--border)]">
                   {catArticles.slice(0, 6).map((a) => (
-                    <ArticleCard key={a.id} article={a} variant="horizontal" />
+                    <ArticleCard key={a.id} article={a} variant="horizontal" showCategory={false} />
                   ))}
+                </div>
+              ) : catArticles.length >= 2 ? (
+                /* Feature + supporting layout — lead article with image, rest as horizontal list */
+                <div className="grid grid-cols-1 md:grid-cols-[1fr,1px,1fr] gap-0">
+                  <ScrollReveal className="pr-0 md:pr-6">
+                    <ArticleCard article={catArticles[0]} showCategory={false} />
+                  </ScrollReveal>
+                  <div className="hidden md:block bg-[var(--border)]" />
+                  <div className="pl-0 md:pl-6 mt-4 md:mt-0">
+                    <div className="space-y-0 divide-y divide-[var(--border)]">
+                      {catArticles.slice(1, 4).map((a) => (
+                        <ArticleCard key={a.id} article={a} variant="horizontal" showCategory={false} />
+                      ))}
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <ScrollStagger className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">

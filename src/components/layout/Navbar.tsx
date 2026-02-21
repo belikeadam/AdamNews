@@ -22,7 +22,7 @@ const STATIC_CATEGORIES = [
   { name: 'General', slug: 'general' },
 ]
 
-// Shared nav link data — single source of truth for desktop + mobile
+// Desktop tool links
 const TOOL_LINKS = [
   { href: '/search', label: 'Search & Archive', icon: 'search' },
   { href: '/plans', label: 'Plans & Pricing', icon: 'credit-card' },
@@ -30,12 +30,10 @@ const TOOL_LINKS = [
   { href: '/architecture', label: 'Architecture', icon: 'dashboard' },
 ] as const
 
-// Reusable icon component
-function NavIcon({ name }: { name: string }) {
-  const p = { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
+function NavIcon({ name, size = 16 }: { name: string; size?: number }) {
+  const p = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
   switch (name) {
     case 'home': return <svg {...p}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-    case 'article': return <svg {...p}><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/></svg>
     case 'search': return <svg {...p}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     case 'credit-card': return <svg {...p}><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
     case 'code': return <svg {...p}><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
@@ -46,6 +44,9 @@ function NavIcon({ name }: { name: string }) {
     case 'moon': return <svg {...p}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
     case 'bookmark': return <svg {...p}><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
     case 'trending': return <svg {...p}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+    case 'chevron-right': return <svg {...p}><polyline points="9 18 15 12 9 6"/></svg>
+    case 'user': return <svg {...p}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    case 'star': return <svg {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
     default: return null
   }
 }
@@ -79,19 +80,27 @@ export default function Navbar({ categories }: NavbarProps) {
       day: 'numeric',
     }))
 
-    // Read saved articles count
     try {
       const raw = localStorage.getItem('savedArticles')
       if (raw) setSavedCount(JSON.parse(raw).length)
     } catch { /* ignore */ }
   }, [])
 
-  // Close drawer on ANY navigation
+  // Refresh saved count when drawer opens
+  useEffect(() => {
+    if (drawerOpen) {
+      try {
+        const raw = localStorage.getItem('savedArticles')
+        if (raw) setSavedCount(JSON.parse(raw).length)
+        else setSavedCount(0)
+      } catch { /* ignore */ }
+    }
+  }, [drawerOpen])
+
   useEffect(() => {
     setDrawerOpen(false)
   }, [pathname, searchParams])
 
-  // Lock body scroll when drawer is open
   useEffect(() => {
     if (drawerOpen) {
       document.body.style.overflow = 'hidden'
@@ -117,27 +126,6 @@ export default function Navbar({ categories }: NavbarProps) {
     }
   }
 
-  // DRY drawer link
-  const DrawerLink = ({ href, icon, children, active, badge }: { href: string; icon: string; children: React.ReactNode; active?: boolean; badge?: number }) => (
-    <Link
-      href={href}
-      onClick={closeDrawer}
-      className={`flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
-        active
-          ? 'text-[var(--text)] bg-[var(--surface)]'
-          : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)]'
-      }`}
-    >
-      <NavIcon name={icon} />
-      <span className="flex-1">{children}</span>
-      {badge !== undefined && badge > 0 && (
-        <span className="text-[0.6rem] font-bold bg-[var(--accent)] text-white px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-          {badge}
-        </span>
-      )}
-    </Link>
-  )
-
   return (
     <>
       <header>
@@ -157,10 +145,14 @@ export default function Navbar({ categories }: NavbarProps) {
                 <NavIcon name={isDark ? 'sun' : 'moon'} />
               </button>
               <span className="hidden md:inline text-[var(--border)]">|</span>
-              <a href={`${process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'}/admin`} target="_blank" rel="noopener noreferrer" className="hidden md:inline hover:text-[var(--text)] transition-colors">
-                CMS Admin
-              </a>
-              <span className="hidden md:inline text-[var(--border)]">|</span>
+              {isAdmin && (
+                <>
+                  <a href={`${process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'}/admin`} target="_blank" rel="noopener noreferrer" className="hidden md:inline hover:text-[var(--text)] transition-colors">
+                    CMS
+                  </a>
+                  <span className="hidden md:inline text-[var(--border)]">|</span>
+                </>
+              )}
               <div className="hidden md:flex items-center gap-3">
                 {isAuthenticated ? (
                   <>
@@ -214,7 +206,7 @@ export default function Navbar({ categories }: NavbarProps) {
               ))}
             </div>
 
-            {/* Mobile */}
+            {/* Mobile sticky bar */}
             <div className="flex md:hidden items-center justify-between h-11">
               <span className="text-sm font-semibold tracking-tight" style={{ fontFamily: 'var(--font-headline)' }}>
                 {SITE_NAME_UPPER}
@@ -232,7 +224,9 @@ export default function Navbar({ categories }: NavbarProps) {
         </nav>
       </header>
 
-      {/* Mobile drawer — framer-motion animated */}
+      {/* ═══════════════════════════════════════════════════════ */}
+      {/* Mobile drawer — redesigned for reader engagement       */}
+      {/* ═══════════════════════════════════════════════════════ */}
       <AnimatePresence>
         {drawerOpen && (
           <div className="fixed inset-0 z-50 md:hidden">
@@ -242,11 +236,11 @@ export default function Navbar({ categories }: NavbarProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
               onClick={closeDrawer}
             />
 
-            {/* Drawer panel with swipe-to-close */}
+            {/* Drawer panel */}
             <motion.div
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
@@ -258,140 +252,272 @@ export default function Navbar({ categories }: NavbarProps) {
               onDragEnd={(_, info) => {
                 if (info.offset.x > 100 || info.velocity.x > 500) closeDrawer()
               }}
-              className="absolute top-0 right-0 w-80 h-full bg-[var(--bg)] border-l border-[var(--border)] shadow-2xl overflow-y-auto"
+              className="absolute top-0 right-0 w-[85vw] max-w-[320px] h-full bg-[var(--bg)] border-l border-[var(--border)] shadow-2xl flex flex-col"
             >
-              {/* Header */}
-              <div className="flex items-center justify-between p-4 border-b border-[var(--border)]">
-                <span className="font-bold text-[var(--text)]" style={{ fontFamily: 'var(--font-headline)' }}>{SITE_NAME_UPPER}</span>
-                <button onClick={closeDrawer} className="h-9 w-9 flex items-center justify-center text-[var(--muted)] hover:text-[var(--text)] transition-colors" aria-label="Close menu">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              {/* ── Header ── */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
+                <Link href="/" onClick={closeDrawer} className="font-bold text-lg text-[var(--text)]" style={{ fontFamily: 'var(--font-headline)' }}>
+                  {SITE_NAME_UPPER}
+                </Link>
+                <button onClick={closeDrawer} className="h-8 w-8 flex items-center justify-center rounded-full bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--text)] transition-colors" aria-label="Close menu">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               </div>
 
-              {/* Search */}
-              <div className="px-4 pt-4 pb-2">
-                <form onSubmit={handleDrawerSearch}>
-                  <div className="relative">
-                    <NavIcon name="search" />
-                    <input
-                      type="text"
-                      value={drawerSearch}
-                      onChange={(e) => setDrawerSearch(e.target.value)}
-                      placeholder="Search articles..."
-                      className="w-full h-10 pl-9 pr-3 text-sm border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] focus:outline-none focus:border-[var(--text)] transition-colors placeholder:text-[var(--muted)]"
-                      style={{ paddingLeft: '2.25rem' }}
-                    />
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]">
-                      <NavIcon name="search" />
+              {/* ── Scrollable content ── */}
+              <div className="flex-1 overflow-y-auto">
+                {/* Search */}
+                <div className="px-5 pt-5 pb-3">
+                  <form onSubmit={handleDrawerSearch}>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={drawerSearch}
+                        onChange={(e) => setDrawerSearch(e.target.value)}
+                        placeholder="Search articles..."
+                        className="w-full h-11 pl-10 pr-4 text-sm rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] transition-all placeholder:text-[var(--muted)]"
+                      />
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]">
+                        <NavIcon name="search" />
+                      </div>
                     </div>
-                  </div>
-                </form>
-              </div>
+                  </form>
+                </div>
 
-              {/* Quick links */}
-              <div className="px-4 pt-2 pb-2">
-                <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
-                  <Link href="/" onClick={closeDrawer} className={`flex-shrink-0 px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${pathname === '/' && !activeCategory ? 'bg-[var(--text)] text-[var(--bg)] border-[var(--text)]' : 'border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)]'}`}>
-                    Home
-                  </Link>
-                  {cats.map((cat) => (
-                    <Link key={cat.slug} href={`/?category=${cat.slug}`} onClick={closeDrawer} className={`flex-shrink-0 px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${activeCategory === cat.slug ? 'bg-[var(--text)] text-[var(--bg)] border-[var(--text)]' : 'border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)]'}`}>
-                      {cat.name}
+                {/* Category chips */}
+                <div className="px-5 pb-4">
+                  <div className="flex flex-wrap gap-2">
+                    <Link
+                      href="/"
+                      onClick={closeDrawer}
+                      className={`px-3.5 py-1.5 text-xs font-medium rounded-full border transition-all ${
+                        pathname === '/' && !activeCategory
+                          ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
+                          : 'border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] hover:border-[var(--text)]'
+                      }`}
+                    >
+                      Home
                     </Link>
-                  ))}
+                    {cats.map((cat) => (
+                      <Link
+                        key={cat.slug}
+                        href={`/?category=${cat.slug}`}
+                        onClick={closeDrawer}
+                        className={`px-3.5 py-1.5 text-xs font-medium rounded-full border transition-all ${
+                          activeCategory === cat.slug
+                            ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
+                            : 'border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] hover:border-[var(--text)]'
+                        }`}
+                      >
+                        {cat.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+
+                {/* ── Your reading ── */}
+                <div className="px-5 py-3">
+                  <h3 className="text-[0.6rem] uppercase tracking-[0.15em] text-[var(--muted)] font-semibold mb-2">
+                    Your Reading
+                  </h3>
+                  <Link
+                    href="/saved"
+                    onClick={closeDrawer}
+                    className={`flex items-center gap-3 px-3.5 py-3 rounded-lg transition-all ${
+                      pathname === '/saved'
+                        ? 'bg-[var(--accent-light)] text-[var(--accent)]'
+                        : 'text-[var(--text)] hover:bg-[var(--surface)]'
+                    }`}
+                  >
+                    <div className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--surface)]">
+                      <NavIcon name="bookmark" size={14} />
+                    </div>
+                    <span className="flex-1 text-sm font-medium">Saved Articles</span>
+                    {savedCount > 0 && (
+                      <span className="text-[0.65rem] font-bold bg-[var(--accent)] text-white px-2 py-0.5 rounded-full min-w-[22px] text-center">
+                        {savedCount}
+                      </span>
+                    )}
+                  </Link>
+                  <Link
+                    href="/search?sort=trending"
+                    onClick={closeDrawer}
+                    className="flex items-center gap-3 px-3.5 py-3 rounded-lg text-[var(--text)] hover:bg-[var(--surface)] transition-all"
+                  >
+                    <div className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--surface)]">
+                      <NavIcon name="trending" size={14} />
+                    </div>
+                    <span className="flex-1 text-sm font-medium">Trending Now</span>
+                    <span className="text-[var(--muted)]">
+                      <NavIcon name="chevron-right" size={14} />
+                    </span>
+                  </Link>
+                </div>
+
+                {/* ── Local info (prayer + weather for mobile) ── */}
+                <div className="mx-5 px-4 py-3 rounded-lg bg-[var(--surface)] border border-[var(--border)]">
+                  <div className="flex items-center justify-between">
+                    <PrayerTimeWidget />
+                    <span className="text-[var(--border)]">·</span>
+                    <WeatherWidget />
+                  </div>
+                </div>
+
+                {/* ── Explore ── */}
+                <div className="px-5 py-4">
+                  <h3 className="text-[0.6rem] uppercase tracking-[0.15em] text-[var(--muted)] font-semibold mb-2">
+                    Explore
+                  </h3>
+                  <nav className="space-y-0.5">
+                    <Link
+                      href="/search"
+                      onClick={closeDrawer}
+                      className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm transition-all ${
+                        pathname === '/search'
+                          ? 'bg-[var(--accent-light)] text-[var(--accent)] font-medium'
+                          : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)]'
+                      }`}
+                    >
+                      <NavIcon name="search" size={15} />
+                      Search & Archive
+                    </Link>
+                    <Link
+                      href="/plans"
+                      onClick={closeDrawer}
+                      className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm transition-all ${
+                        pathname === '/plans'
+                          ? 'bg-[var(--accent-light)] text-[var(--accent)] font-medium'
+                          : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)]'
+                      }`}
+                    >
+                      <NavIcon name="star" size={15} />
+                      Plans & Pricing
+                    </Link>
+                    {/* Admin-only developer tools */}
+                    {isAdmin && (
+                      <>
+                        <Link
+                          href="/api-docs"
+                          onClick={closeDrawer}
+                          className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm transition-all ${
+                            pathname === '/api-docs'
+                              ? 'bg-[var(--accent-light)] text-[var(--accent)] font-medium'
+                              : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)]'
+                          }`}
+                        >
+                          <NavIcon name="code" size={15} />
+                          API Docs
+                        </Link>
+                        <Link
+                          href="/architecture"
+                          onClick={closeDrawer}
+                          className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm transition-all ${
+                            pathname === '/architecture'
+                              ? 'bg-[var(--accent-light)] text-[var(--accent)] font-medium'
+                              : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)]'
+                          }`}
+                        >
+                          <NavIcon name="dashboard" size={15} />
+                          Architecture
+                        </Link>
+                        <a
+                          href={`${process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'}/admin`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={closeDrawer}
+                          className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-all"
+                        >
+                          <NavIcon name="dashboard" size={15} />
+                          <span className="flex-1">CMS Admin</span>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-40"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        </a>
+                      </>
+                    )}
+                  </nav>
                 </div>
               </div>
 
-              <hr className="mx-4 border-[var(--border)]" />
-
-              {/* Saved & Trending quick links */}
-              <div className="px-4 pt-3 pb-2">
-                <nav className="space-y-0">
-                  <DrawerLink href="/saved" icon="bookmark" active={pathname === '/saved'} badge={savedCount}>
-                    Saved Articles
-                  </DrawerLink>
-                  <DrawerLink href="/" icon="trending" active={false}>
-                    Trending Now
-                  </DrawerLink>
-                </nav>
-              </div>
-
-              <hr className="mx-4 border-[var(--border)]" />
-
-              {/* Tools */}
-              <div className="px-4 pt-3 pb-2">
-                <h3 className="text-[0.65rem] uppercase tracking-[0.15em] text-[var(--muted)] font-medium mb-2 px-1">
-                  Tools &amp; Resources
-                </h3>
-                <nav className="space-y-0">
-                  {TOOL_LINKS.map((link) => (
-                    <DrawerLink key={link.href} href={link.href} icon={link.icon} active={pathname === link.href}>
-                      {link.label}
-                    </DrawerLink>
-                  ))}
-                  <a
-                    href={`${process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'}/admin`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={closeDrawer}
-                    className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors"
+              {/* ── Footer area (fixed at bottom) ── */}
+              <div className="border-t border-[var(--border)] bg-[var(--surface)]/50">
+                {/* Theme toggle */}
+                <div className="px-5 py-3">
+                  <button
+                    onClick={toggleTheme}
+                    className="flex items-center gap-3 w-full px-3.5 py-2.5 rounded-lg hover:bg-[var(--surface)] transition-all"
                   >
-                    <NavIcon name="dashboard" />
-                    CMS Admin
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-auto opacity-40"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                  </a>
-                </nav>
-              </div>
-
-              <hr className="mx-4 border-[var(--border)]" />
-
-              {/* Account */}
-              <div className="px-4 pt-3 pb-4">
-                <h3 className="text-[0.65rem] uppercase tracking-[0.15em] text-[var(--muted)] font-medium mb-2 px-1">
-                  Account
-                </h3>
-                {isAuthenticated ? (
-                  <div className="space-y-1">
-                    <div className="px-3 py-2 border border-[var(--border)] bg-[var(--surface)] mb-2">
-                      <p className="text-sm font-medium text-[var(--text)]">{user?.name || 'User'}</p>
-                      <p className="text-xs text-[var(--muted)]">{user?.email}</p>
-                      <span className="inline-block mt-1 text-[0.65rem] uppercase tracking-wider text-[var(--accent)] font-medium">
-                        {plan} plan
-                      </span>
+                    <div className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--surface)]">
+                      <NavIcon name={isDark ? 'sun' : 'moon'} size={14} />
                     </div>
-                    <DrawerLink href="/account" icon="sign-in" active={pathname === '/account'}>
-                      My Account
-                    </DrawerLink>
-                    {isAdmin && <DrawerLink href="/dashboard" icon="dashboard">Dashboard</DrawerLink>}
-                    <button onClick={() => { signOut({ callbackUrl: '/' }); closeDrawer() }} className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors w-full text-left">
-                      <NavIcon name="sign-out" />
-                      Sign out
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-2 mt-1">
-                    <Link href="/login" onClick={closeDrawer}>
-                      <button className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm border border-[var(--border)] hover:bg-[var(--surface)] transition-colors">
-                        <NavIcon name="sign-in" />
-                        Sign in
-                      </button>
-                    </Link>
-                    <Link href="/plans" onClick={closeDrawer}>
-                      <button className="w-full px-3 py-2.5 text-sm bg-[var(--text)] text-[var(--bg)] font-medium hover:opacity-90 transition-opacity">
-                        Subscribe
-                      </button>
-                    </Link>
-                  </div>
-                )}
-              </div>
+                    <span className="flex-1 text-sm text-[var(--text)] text-left font-medium">
+                      {isDark ? 'Light mode' : 'Dark mode'}
+                    </span>
+                    <div className={`w-10 h-5 rounded-full relative transition-colors ${isDark ? 'bg-[var(--accent)]' : 'bg-[var(--border)]'}`}>
+                      <motion.div
+                        className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm"
+                        animate={{ left: isDark ? '22px' : '2px' }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                      />
+                    </div>
+                  </button>
+                </div>
 
-              {/* Theme toggle */}
-              <div className="px-4 pb-8">
-                <hr className="border-[var(--border)] mb-3" />
-                <button onClick={toggleTheme} className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors w-full text-left">
-                  <NavIcon name={isDark ? 'sun' : 'moon'} />
-                  {isDark ? 'Light mode' : 'Dark mode'}
-                </button>
+                {/* Account section */}
+                <div className="px-5 pb-5">
+                  {isAuthenticated ? (
+                    <div className="space-y-2">
+                      <Link
+                        href="/account"
+                        onClick={closeDrawer}
+                        className="flex items-center gap-3 px-3.5 py-3 rounded-lg bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--accent)] transition-all"
+                      >
+                        <div className="w-9 h-9 flex items-center justify-center rounded-full bg-[var(--accent)] text-white text-sm font-bold">
+                          {(user?.name || 'U')[0].toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-[var(--text)] truncate">{user?.name || 'User'}</p>
+                          <p className="text-[0.65rem] text-[var(--accent)] font-medium uppercase tracking-wider">{plan} plan</p>
+                        </div>
+                        <span className="text-[var(--muted)]">
+                          <NavIcon name="chevron-right" size={14} />
+                        </span>
+                      </Link>
+                      {isAdmin && (
+                        <Link
+                          href="/dashboard"
+                          onClick={closeDrawer}
+                          className="flex items-center justify-center gap-2 w-full px-3 py-2 rounded-lg text-xs font-medium text-[var(--muted)] bg-[var(--surface)] hover:text-[var(--text)] transition-colors"
+                        >
+                          <NavIcon name="dashboard" size={12} />
+                          Admin Dashboard
+                        </Link>
+                      )}
+                      <button
+                        onClick={() => { signOut({ callbackUrl: '/' }); closeDrawer() }}
+                        className="w-full px-3 py-2 text-xs text-[var(--muted)] hover:text-[var(--danger)] transition-colors text-center"
+                      >
+                        Sign out
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5">
+                      <Link href="/login" onClick={closeDrawer} className="block">
+                        <div className="flex items-center justify-center gap-2.5 w-full px-4 py-3 rounded-lg text-sm font-semibold bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors">
+                          <NavIcon name="sign-in" size={16} />
+                          Sign in
+                        </div>
+                      </Link>
+                      <Link href="/plans" onClick={closeDrawer} className="block">
+                        <div className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg text-sm font-medium border-2 border-[var(--text)] text-[var(--text)] hover:bg-[var(--text)] hover:text-[var(--bg)] transition-all">
+                          <NavIcon name="star" size={14} />
+                          Subscribe
+                        </div>
+                      </Link>
+                      <p className="text-[0.65rem] text-center text-[var(--muted)]">
+                        One-click demo login available
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             </motion.div>
           </div>

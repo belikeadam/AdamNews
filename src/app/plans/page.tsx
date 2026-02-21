@@ -76,29 +76,27 @@ export default function PlansPage() {
         transition={{ duration: 0.4, ease: 'easeOut' }}
         className="bg-gradient-to-b from-[var(--surface)] to-[var(--bg)] border-b border-[var(--border)]"
       >
-        <div className="max-w-5xl mx-auto px-4 py-10 pb-14 sm:py-16 sm:pb-20 md:py-20 text-center">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-[var(--text)] mb-3 sm:mb-4" style={{ fontFamily: 'var(--font-headline)' }}>
+        <div className="max-w-5xl mx-auto px-4 py-8 pb-12 sm:py-12 sm:pb-16 md:py-16 md:pb-20 text-center">
+          <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold tracking-tight text-[var(--text)] mb-2 sm:mb-4" style={{ fontFamily: 'var(--font-headline)' }}>
             Choose your plan
           </h1>
-          <p className="text-base sm:text-lg text-[var(--muted)] mb-6 sm:mb-8 max-w-md mx-auto">
+          <p className="text-sm sm:text-base md:text-lg text-[var(--muted)] mb-5 sm:mb-8 max-w-md mx-auto leading-relaxed">
             Unlock premium content and exclusive features with a plan that fits you.
           </p>
 
-          {/* Monthly / Annual toggle with animated slider */}
-          <div className="relative inline-flex items-center bg-[var(--surface)] rounded-full p-1 border border-[var(--border)]">
+          {/* Monthly / Annual toggle */}
+          <div className="relative inline-grid grid-cols-2 bg-[var(--surface)] rounded-full p-1 border border-[var(--border)] min-w-[260px] sm:min-w-[280px]">
+            {/* Animated slider — always 50% width */}
             <motion.div
               className="absolute top-1 bottom-1 rounded-full bg-[var(--bg)] shadow-sm"
-              layoutId="billing-toggle"
-              animate={{
-                left: billing === 'monthly' ? '4px' : '50%',
-                right: billing === 'annual' ? '4px' : '50%',
-              }}
+              style={{ width: 'calc(50% - 4px)' }}
+              animate={{ x: billing === 'monthly' ? 0 : '100%' }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             />
             <button
               onClick={() => setBilling('monthly')}
               className={cn(
-                'relative z-10 px-5 h-10 rounded-full text-sm font-medium transition-colors',
+                'relative z-10 h-9 sm:h-10 rounded-full text-xs sm:text-sm font-medium transition-colors',
                 billing === 'monthly'
                   ? 'text-[var(--text)]'
                   : 'text-[var(--muted)] hover:text-[var(--text)]'
@@ -109,28 +107,29 @@ export default function PlansPage() {
             <button
               onClick={() => setBilling('annual')}
               className={cn(
-                'relative z-10 px-5 h-10 rounded-full text-sm font-medium transition-colors',
+                'relative z-10 h-9 sm:h-10 rounded-full text-xs sm:text-sm font-medium transition-colors',
                 billing === 'annual'
                   ? 'text-[var(--text)]'
                   : 'text-[var(--muted)] hover:text-[var(--text)]'
               )}
             >
-              Annual{' '}
-              <Badge variant="success" className="ml-1">
-                Save 20%
-              </Badge>
+              Annual
             </button>
           </div>
+          {/* Save badge — outside the toggle for clean layout */}
+          <p className="mt-2 text-xs font-medium text-green-600 dark:text-green-400">
+            Save 20% with annual billing
+          </p>
         </div>
       </motion.div>
 
       {/* Plan cards */}
-      <div className="max-w-5xl mx-auto px-4 -mt-6 sm:-mt-10 pb-12">
+      <div className="max-w-5xl mx-auto px-4 -mt-4 sm:-mt-8 md:-mt-10 pb-12">
         <motion.div
           variants={cardStagger}
           initial="hidden"
           animate="visible"
-          className="grid md:grid-cols-3 gap-4 sm:gap-6 lg:gap-8"
+          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 lg:gap-8"
         >
           {PLANS.map((plan) => {
             const isCurrent = isCurrentPlan(plan.id)
@@ -143,7 +142,7 @@ export default function PlansPage() {
                     isCurrent
                       ? 'ring-2 ring-green-500 dark:ring-green-400'
                       : plan.highlight
-                      ? 'ring-2 ring-[var(--accent)] shadow-lg scale-[1.02]'
+                      ? 'ring-2 ring-[var(--accent)] shadow-lg sm:scale-[1.02]'
                       : ''
                   )}
                 >
@@ -160,24 +159,24 @@ export default function PlansPage() {
                       </Badge>
                     </div>
                   ) : null}
-                  <CardContent className="pt-8 pb-6">
-                    <h3 className="text-lg font-semibold text-[var(--text)] mb-1">
+                  <CardContent className="pt-7 sm:pt-8 pb-5 sm:pb-6 px-4 sm:px-6">
+                    <h3 className="text-base sm:text-lg font-semibold text-[var(--text)] mb-1">
                       {plan.name}
                     </h3>
-                    <div className="mb-6">
-                      <span className="text-4xl font-bold tracking-tight text-[var(--text)]">
+                    <div className="mb-5 sm:mb-6">
+                      <span className="text-3xl sm:text-4xl font-bold tracking-tight text-[var(--text)]">
                         RM{plan.price[billing]}
                       </span>
                       {plan.price[billing] > 0 && (
-                        <span className="text-[var(--muted)] ml-1">/mo</span>
+                        <span className="text-[var(--muted)] ml-1 text-sm">/mo</span>
                       )}
                     </div>
 
-                    <ul className="space-y-3 mb-8">
+                    <ul className="space-y-2.5 sm:space-y-3 mb-6 sm:mb-8">
                       {plan.features.map((feature) => (
                         <li
                           key={feature}
-                          className="flex items-start gap-2.5 text-sm text-[var(--muted)]"
+                          className="flex items-start gap-2 text-sm text-[var(--muted)]"
                         >
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
                             <polyline points="20 6 9 17 4 12" />
@@ -214,20 +213,20 @@ export default function PlansPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
-          className="mt-8 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4 max-w-lg mx-auto text-center"
+          className="mt-6 sm:mt-8 bg-[var(--surface)] border border-[var(--border)] p-3 sm:p-4 max-w-lg mx-auto text-center rounded-lg"
         >
-          <p className="text-xs font-semibold text-blue-800 dark:text-blue-300 uppercase tracking-wider mb-1">
+          <p className="text-[0.65rem] sm:text-xs font-semibold text-[var(--accent)] uppercase tracking-wider mb-1">
             Stripe Test Mode
           </p>
-          <p className="text-sm text-blue-700 dark:text-blue-400">
-            Use card <code className="font-mono bg-blue-100 dark:bg-blue-800/40 px-1.5 py-0.5 rounded text-blue-900 dark:text-blue-200">4242 4242 4242 4242</code>
+          <p className="text-xs sm:text-sm text-[var(--text)]">
+            Use card <code className="font-mono bg-[var(--bg)] border border-[var(--border)] px-1.5 py-0.5 rounded text-[var(--text)] text-[0.7rem] sm:text-sm">4242 4242 4242 4242</code>
           </p>
-          <p className="text-xs text-blue-600 dark:text-blue-500 mt-1">
-            Any future expiry (e.g. 12/29) &middot; Any 3-digit CVC &middot; Any name
+          <p className="text-[0.65rem] sm:text-xs text-[var(--muted)] mt-1">
+            Any future expiry &middot; Any CVC &middot; Any name
           </p>
         </motion.div>
 
-        <p className="text-center text-xs text-[var(--muted)] mt-6">
+        <p className="text-center text-[0.65rem] sm:text-xs text-[var(--muted)] mt-5 sm:mt-6">
           Secure payments via Stripe &middot; Cancel anytime &middot; 30-day money-back guarantee
         </p>
       </div>

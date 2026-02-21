@@ -10,6 +10,7 @@ import type { Article } from '@/types'
 interface ArticleCardProps {
   article: Article
   variant?: 'default' | 'compact' | 'horizontal'
+  showCategory?: boolean
 }
 
 function MetaBar({ article }: { article: Article }) {
@@ -90,7 +91,7 @@ function BookmarkButton({ article }: { article: Article }) {
       onClick={toggle}
       animate={animate ? { scale: [1, 1.3, 1] } : {}}
       transition={{ duration: 0.4, ease: 'easeOut' }}
-      className="absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/30 text-white/80 hover:bg-black/50 hover:text-white opacity-0 group-hover:opacity-100 transition-all duration-200"
+      className="absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/30 text-white/80 hover:bg-black/50 hover:text-white sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200"
       aria-label={saved ? 'Remove from saved' : 'Save article'}
     >
       <svg width="14" height="14" viewBox="0 0 24 24" fill={saved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
@@ -100,7 +101,7 @@ function BookmarkButton({ article }: { article: Article }) {
 
 const spring = { type: 'spring' as const, stiffness: 300, damping: 30 }
 
-export default function ArticleCard({ article, variant = 'default' }: ArticleCardProps) {
+export default function ArticleCard({ article, variant = 'default', showCategory = true }: ArticleCardProps) {
   const { attributes: a } = article
   const coverUrl = getArticleCoverUrl(
     a.cover?.data?.attributes?.formats?.medium?.url || a.cover?.data?.attributes?.url,
@@ -118,13 +119,13 @@ export default function ArticleCard({ article, variant = 'default' }: ArticleCar
         whileTap={{ scale: 0.98 }}
         transition={spring}
       >
-        <Link href={`/articles/${a.slug}`} className="group flex gap-4 py-4">
+        <Link href={`/articles/${a.slug}`} className="group flex gap-4 py-3.5">
           <div className="relative w-24 h-16 sm:w-28 sm:h-20 flex-shrink-0 overflow-hidden bg-[var(--surface-2)]">
               <Image src={coverUrl} alt={a.title} fill sizes="112px" className="object-cover group-hover:scale-105 transition-transform duration-300" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              {categoryName && <span className="section-label">{categoryName}</span>}
+              {showCategory && categoryName && <span className="section-label">{categoryName}</span>}
               {a.premium && <span className="text-[0.6rem] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">Premium</span>}
               {a.readTime && <span className="text-[0.65rem] text-[var(--muted)]">{a.readTime}</span>}
             </div>
@@ -148,25 +149,38 @@ export default function ArticleCard({ article, variant = 'default' }: ArticleCar
         whileHover={{ y: -2 }}
         transition={spring}
       >
-        <Link href={`/articles/${a.slug}`} className="group block pb-5 border-b border-[var(--border)]">
-          <div className="flex items-center gap-2">
-            {categoryName && <span className="section-label">{categoryName}</span>}
-            {a.premium && <span className="text-[0.6rem] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">Premium</span>}
+        <Link href={`/articles/${a.slug}`} className="group flex gap-4 pb-5 border-b border-[var(--border)]">
+          {/* Text content */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              {showCategory && categoryName && <span className="section-label">{categoryName}</span>}
+              {a.premium && <span className="text-[0.6rem] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">Premium</span>}
+            </div>
+            <h3 className="headline-md line-clamp-2 mt-1 mb-1.5 group-hover:text-[var(--accent)] transition-colors">
+              {a.title}
+            </h3>
+            {a.excerpt && (
+              <p className="text-sm text-[var(--muted)] line-clamp-2 mb-2 leading-relaxed">
+                {truncate(a.excerpt, 100)}
+              </p>
+            )}
+            <div className="flex flex-wrap items-center justify-between gap-1">
+              <span className="byline">
+                {authorName && `By ${authorName}`}
+                {a.publishedAt && ` · ${relativeTime(a.publishedAt)}`}
+              </span>
+              <MetaBar article={article} />
+            </div>
           </div>
-          <h3 className="headline-md line-clamp-2 mt-1 mb-1.5 group-hover:text-[var(--accent)] transition-colors">
-            {a.title}
-          </h3>
-          {a.excerpt && (
-            <p className="text-sm text-[var(--muted)] line-clamp-2 mb-2 leading-relaxed">
-              {truncate(a.excerpt, 100)}
-            </p>
-          )}
-          <div className="flex items-center justify-between">
-            <span className="byline">
-              {authorName && `By ${authorName}`}
-              {a.publishedAt && ` · ${relativeTime(a.publishedAt)}`}
-            </span>
-            <MetaBar article={article} />
+          {/* Thumbnail */}
+          <div className="relative w-20 h-20 sm:w-28 sm:h-24 flex-shrink-0 overflow-hidden bg-[var(--surface-2)] mt-1">
+            <Image
+              src={coverUrl}
+              alt=""
+              fill
+              sizes="112px"
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
+            />
           </div>
         </Link>
       </motion.div>

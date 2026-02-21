@@ -21,6 +21,8 @@ export default function ArticleToolbar({ slug, title, excerpt, category }: Artic
   const [fontSize, setFontSize] = useState<FontSize>('medium')
   const [saved, setSaved] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [pageUrl, setPageUrl] = useState('')
+  const [canShare, setCanShare] = useState(false)
 
   useEffect(() => {
     // Restore font size preference
@@ -29,6 +31,9 @@ export default function ArticleToolbar({ slug, title, excerpt, category }: Artic
       setFontSize(stored)
       applyFontSize(stored)
     }
+
+    setPageUrl(window.location.href)
+    setCanShare(typeof navigator !== 'undefined' && 'share' in navigator)
 
     // Check if article is saved
     try {
@@ -73,7 +78,7 @@ export default function ArticleToolbar({ slug, title, excerpt, category }: Artic
 
   const copyLink = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href)
+      await navigator.clipboard.writeText(pageUrl)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch { /* ignore */ }
@@ -82,32 +87,32 @@ export default function ArticleToolbar({ slug, title, excerpt, category }: Artic
   const shareNative = async () => {
     if (navigator.share) {
       try {
-        await navigator.share({ title, url: window.location.href })
+        await navigator.share({ title, url: pageUrl })
       } catch { /* cancelled */ }
     }
   }
 
   return (
-    <div className="sticky top-[2.75rem] z-30 bg-[var(--bg)]/90 backdrop-blur-sm border-b border-[var(--border)] -mx-4 px-4 py-2 mb-4 sm:mb-6">
+    <div className="sticky top-[2.75rem] z-30 -mx-4 px-4 py-2.5 mb-4 sm:mb-6 border-y border-[var(--border)]" style={{ backgroundColor: 'var(--bg)' }}>
       <div className="flex items-center justify-between">
         {/* Left — font size */}
         <button
           onClick={cycleFontSize}
-          className="flex items-center gap-1.5 text-xs text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+          className="flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors"
           title={`Font size: ${fontSize}`}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M4 7V4h16v3" />
             <line x1="12" y1="4" x2="12" y2="20" />
             <line x1="8" y1="20" x2="16" y2="20" />
           </svg>
-          <span className="hidden sm:inline">
+          <span>
             {fontSize === 'small' ? 'A' : fontSize === 'medium' ? 'A+' : 'A++'}
           </span>
         </button>
 
         {/* Right — actions */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           {/* Save/Bookmark */}
           <button
             onClick={toggleSave}
@@ -145,7 +150,7 @@ export default function ArticleToolbar({ slug, title, excerpt, category }: Artic
 
           {/* WhatsApp share (critical for Malaysian market) */}
           <a
-            href={`https://wa.me/?text=${encodeURIComponent(title + '\n' + (typeof window !== 'undefined' ? window.location.href : ''))}`}
+            href={pageUrl ? `https://wa.me/?text=${encodeURIComponent(title + '\n' + pageUrl)}` : '#'}
             target="_blank"
             rel="noopener noreferrer"
             className="h-8 w-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-green-600 transition-colors"
@@ -158,7 +163,7 @@ export default function ArticleToolbar({ slug, title, excerpt, category }: Artic
           </a>
 
           {/* Share (native on mobile) */}
-          {'share' in navigator && (
+          {canShare && (
             <button
               onClick={shareNative}
               className="h-8 w-8 flex items-center justify-center rounded-lg text-[var(--muted)] hover:text-[var(--text)] transition-colors"

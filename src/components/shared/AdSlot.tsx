@@ -14,7 +14,7 @@ export default function AdSlot({ position, className = '' }: AdSlotProps) {
 
   return (
     <div
-      className={`flex items-center justify-center border border-dashed border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] ${className}`}
+      className={`flex items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)]/50 text-[var(--muted)] ${className}`}
       style={{
         minHeight: position === 'sidebar' ? 250 : position === 'banner' ? 90 : 60,
       }}
@@ -22,10 +22,10 @@ export default function AdSlot({ position, className = '' }: AdSlotProps) {
       aria-label="Advertisement"
     >
       <div className="text-center py-4 px-3">
-        <p className="text-[0.65rem] uppercase tracking-widest mb-1 opacity-60">
+        <p className="text-[0.6rem] uppercase tracking-[0.15em] mb-0.5 opacity-40 font-medium">
           Advertisement
         </p>
-        <p className="text-xs opacity-40">{label}</p>
+        <p className="text-[0.6rem] opacity-30">{label}</p>
       </div>
     </div>
   )
