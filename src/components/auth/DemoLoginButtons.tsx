@@ -7,15 +7,15 @@ import { useRouter } from 'next/navigation'
 const DEMO_ACCOUNTS = [
   {
     label: 'Admin Demo',
-    description: 'Full access — dashboard, CMS editor, premium content',
+    description: 'Full access — Dashboard, API Docs, Architecture, CMS Editor, Premium Articles',
     email: 'admin@AdamNews.com',
     password: 'demo1234',
-    badge: 'Admin + Premium',
+    badge: 'View All',
     badgeColor: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
   },
   {
     label: 'Reader Demo',
-    description: 'Free tier — browse articles, test subscription upgrade',
+    description: 'Free tier — browse articles, paywall experience, subscription upgrade flow',
     email: 'reader@AdamNews.com',
     password: 'demo1234',
     badge: 'Free Plan',
