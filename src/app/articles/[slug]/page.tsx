@@ -5,6 +5,7 @@ import ArticleBody from '@/components/article/ArticleBody'
 import PaywallGate from '@/components/article/PaywallGate'
 import AuthorBio from '@/components/article/AuthorBio'
 import ReadingProgress from '@/components/article/ReadingProgress'
+import ArticleAnalytics from '@/components/article/ArticleAnalytics'
 import ArticleCard from '@/components/reader/ArticleCard'
 import AdSlot from '@/components/shared/AdSlot'
 import { getArticleBySlug, getRelatedArticles } from '@/lib/api/strapi'
@@ -65,6 +66,7 @@ export default async function ArticlePage({ params }: PageProps) {
   return (
     <>
       <ReadingProgress />
+      <ArticleAnalytics slug={slug} />
 
       {/* Full-bleed cover image */}
       <div className="relative aspect-[2/1] sm:aspect-[5/2] lg:aspect-[3/1] bg-[var(--surface-2)] overflow-hidden">
