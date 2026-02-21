@@ -1,4 +1,5 @@
 import type { NextAuthConfig } from 'next-auth'
+import type { UserRole, UserPlan } from '@/types'
 import Google from 'next-auth/providers/google'
 
 export const authConfig: NextAuthConfig = {
@@ -41,8 +42,8 @@ export const authConfig: NextAuthConfig = {
     },
     session({ session, token }) {
       if (token) {
-        session.user.role = token.role as string
-        session.user.plan = token.plan as string
+        session.user.role = (token.role as UserRole) || 'user'
+        session.user.plan = (token.plan as UserPlan) || 'free'
       }
       return session
     },
