@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react'
 import TechBar from '@/components/layout/TechBar'
@@ -8,7 +8,7 @@ import Button from '@/components/ui/Button'
 import ArchCallout from '@/components/shared/ArchCallout'
 import { cn } from '@/lib/utils'
 
-const STRAPI_BASE = 'http://localhost:1337'
+const STRAPI_BASE = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'
 
 const ENDPOINTS = [
   {
@@ -58,12 +58,13 @@ const ENDPOINTS = [
     description: 'Create a Stripe Checkout session for subscription plans. Requires an active NextAuth session.',
     auth: 'Authenticated (NextAuth session)',
     params: [
-      { name: 'priceId', type: 'string', required: true, description: 'Stripe Price ID from plan configuration' },
+      { name: 'planId', type: 'string', required: true, description: 'Plan identifier: "standard" or "premium"' },
+      { name: 'billing', type: 'string', required: true, description: 'Billing period: "monthly" or "annual"' },
     ],
-    curl: `curl -X POST "http://localhost:3000/api/stripe/checkout" \\
+    curl: `curl -X POST "/api/stripe/checkout" \\
   -H "Content-Type: application/json" \\
   -H "Cookie: next-auth.session-token=..." \\
-  -d '{"priceId":"price_standard_monthly"}'`,
+  -d '{"planId":"standard","billing":"monthly"}'`,
     tryUrl: null,
   },
   {
@@ -76,7 +77,7 @@ const ENDPOINTS = [
       { name: 'model', type: 'string', required: false, description: 'Strapi content type that changed' },
       { name: 'entry', type: 'object', required: false, description: 'The entry data from Strapi webhook' },
     ],
-    curl: `curl -X POST "http://localhost:3000/api/revalidate" \\
+    curl: `curl -X POST "/api/revalidate" \\
   -H "x-webhook-secret: your_secret" \\
   -H "Content-Type: application/json" \\
   -d '{"model":"article","entry":{"slug":"my-article"}}'`,
@@ -132,16 +133,45 @@ export default function ApiDocsPage() {
       />
 
       <div className="max-w-7xl mx-auto px-4 py-6 pb-20 md:pb-6">
-        <h1 className="text-3xl font-bold text-[var(--text)] mb-2" style={{ fontFamily: 'var(--font-headline)' }}>
+        <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text)] mb-2" style={{ fontFamily: 'var(--font-headline)' }}>
           API Reference
         </h1>
-        <p className="text-[var(--muted)] mb-6">
+        <p className="text-sm sm:text-base text-[var(--muted)] mb-6">
           Interactive documentation for The Adam News API. Powered by Strapi CMS and Next.js.
         </p>
 
+        {/* Mobile endpoint selector */}
+        <div className="lg:hidden mb-4">
+          <div className="flex flex-wrap gap-2">
+            {ENDPOINTS.map((ep) => (
+              <button
+                key={ep.id}
+                onClick={() => {
+                  setSelected(ep.id)
+                  setResponse(null)
+                }}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-2 text-xs border transition-colors',
+                  selected === ep.id
+                    ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
+                    : 'text-[var(--muted)] border-[var(--border)] hover:bg-[var(--surface)]'
+                )}
+              >
+                <Badge
+                  variant={METHOD_COLORS[ep.method as keyof typeof METHOD_COLORS]}
+                  size="sm"
+                >
+                  {ep.method}
+                </Badge>
+                <span>{ep.path.split('/').pop()}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="grid lg:grid-cols-[200px,1fr,1fr] gap-6">
-          {/* Left nav */}
-          <nav className="space-y-1">
+          {/* Left nav — desktop only */}
+          <nav className="hidden lg:block space-y-1">
             {ENDPOINTS.map((ep) => (
               <button
                 key={ep.id}
@@ -157,9 +187,7 @@ export default function ApiDocsPage() {
                 )}
               >
                 <Badge
-                  variant={
-                    METHOD_COLORS[ep.method as keyof typeof METHOD_COLORS]
-                  }
+                  variant={METHOD_COLORS[ep.method as keyof typeof METHOD_COLORS]}
                   size="sm"
                 >
                   {ep.method}
@@ -171,87 +199,78 @@ export default function ApiDocsPage() {
 
           {/* Center: endpoint detail */}
           <div className="space-y-4">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <Badge
-                variant={
-                  METHOD_COLORS[
-                    endpoint.method as keyof typeof METHOD_COLORS
-                  ]
-                }
+                variant={METHOD_COLORS[endpoint.method as keyof typeof METHOD_COLORS]}
                 size="md"
               >
                 {endpoint.method}
               </Badge>
-              <code className="text-sm font-mono text-[var(--text)]">
+              <code className="text-sm font-mono text-[var(--text)] break-all">
                 {endpoint.path}
               </code>
             </div>
 
-            <p className="text-[var(--muted)]">{endpoint.description}</p>
+            <p className="text-sm text-[var(--muted)]">{endpoint.description}</p>
 
             <div className="text-sm">
               <span className="font-medium text-[var(--text)]">Auth: </span>
               <span className="text-[var(--muted)]">{endpoint.auth}</span>
             </div>
 
-            {/* Parameters table */}
+            {/* Parameters — card list on mobile, table on desktop */}
             <Card>
               <CardContent>
                 <h3 className="font-semibold text-[var(--text)] mb-3 text-sm">
                   Parameters
                 </h3>
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-[var(--border)]">
-                      <th className="pb-2 text-left font-medium text-[var(--muted)]">
-                        Name
-                      </th>
-                      <th className="pb-2 text-left font-medium text-[var(--muted)]">
-                        Type
-                      </th>
-                      <th className="pb-2 text-left font-medium text-[var(--muted)]">
-                        Required
-                      </th>
-                      <th className="pb-2 text-left font-medium text-[var(--muted)]">
-                        Description
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {endpoint.params.map((param) => (
-                      <tr
-                        key={param.name}
-                        className="border-b border-[var(--border)]"
-                      >
-                        <td className="py-2 font-mono text-[var(--text)]">
-                          {param.name}
-                        </td>
-                        <td className="py-2 text-[var(--muted)]">
-                          {param.type}
-                        </td>
-                        <td className="py-2">
-                          {param.required ? (
-                            <Badge variant="danger">Yes</Badge>
-                          ) : (
-                            <Badge>No</Badge>
-                          )}
-                        </td>
-                        <td className="py-2 text-[var(--muted)]">
-                          {param.description}
-                        </td>
+
+                {/* Desktop table */}
+                <div className="hidden sm:block">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-[var(--border)]">
+                        <th className="pb-2 text-left font-medium text-[var(--muted)]">Name</th>
+                        <th className="pb-2 text-left font-medium text-[var(--muted)]">Type</th>
+                        <th className="pb-2 text-left font-medium text-[var(--muted)]">Required</th>
+                        <th className="pb-2 text-left font-medium text-[var(--muted)]">Description</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {endpoint.params.map((param) => (
+                        <tr key={param.name} className="border-b border-[var(--border)]">
+                          <td className="py-2 font-mono text-xs text-[var(--text)]">{param.name}</td>
+                          <td className="py-2 text-[var(--muted)]">{param.type}</td>
+                          <td className="py-2">
+                            {param.required ? <Badge variant="danger" size="sm">Yes</Badge> : <Badge size="sm">No</Badge>}
+                          </td>
+                          <td className="py-2 text-[var(--muted)]">{param.description}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile stacked cards */}
+                <div className="sm:hidden space-y-3">
+                  {endpoint.params.map((param) => (
+                    <div key={param.name} className="border-b border-[var(--border)] pb-3 last:border-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <code className="text-xs font-mono text-[var(--text)] break-all">{param.name}</code>
+                        <span className="text-xs text-[var(--muted)]">({param.type})</span>
+                        {param.required && <Badge variant="danger" size="sm">Required</Badge>}
+                      </div>
+                      <p className="text-xs text-[var(--muted)]">{param.description}</p>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
 
             {/* Curl example */}
             <div>
-              <h3 className="font-semibold text-[var(--text)] mb-2 text-sm">
-                Example
-              </h3>
-              <pre className="bg-[var(--surface-2)] rounded p-3 text-xs font-mono text-[var(--text)] overflow-x-auto">
+              <h3 className="font-semibold text-[var(--text)] mb-2 text-sm">Example</h3>
+              <pre className="bg-[var(--surface-2)] rounded p-3 text-[0.65rem] sm:text-xs font-mono text-[var(--text)] overflow-x-auto whitespace-pre-wrap break-all">
                 {endpoint.curl}
               </pre>
             </div>
@@ -263,19 +282,15 @@ export default function ApiDocsPage() {
 
           {/* Right: response panel */}
           <div>
-            <Card className="sticky top-20">
+            <Card className="lg:sticky lg:top-20">
               <CardContent>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-[var(--text)] text-sm">
-                    Response
-                  </h3>
+                  <h3 className="font-semibold text-[var(--text)] text-sm">Response</h3>
                   {latency !== null && (
-                    <Badge variant="success">
-                      200 OK &middot; {latency}ms
-                    </Badge>
+                    <Badge variant="success">200 OK &middot; {latency}ms</Badge>
                   )}
                 </div>
-                <pre className="bg-[var(--surface-2)] rounded p-3 text-xs font-mono text-[var(--text)] overflow-auto max-h-[500px]">
+                <pre className="bg-[var(--surface-2)] rounded p-3 text-[0.65rem] sm:text-xs font-mono text-[var(--text)] overflow-auto max-h-[400px] lg:max-h-[500px] whitespace-pre-wrap break-all">
                   {response || '// Click "Try it" to see the response'}
                 </pre>
               </CardContent>

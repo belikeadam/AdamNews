@@ -2,16 +2,31 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
-import { NAV_ITEMS } from '@/constants/nav'
 import { SITE_NAME_UPPER } from '@/constants/meta'
 import { signOut } from 'next-auth/react'
 
-export default function Navbar() {
-  const { isAuthenticated, isAdmin, user } = useAuth()
+interface NavbarProps {
+  categories?: { name: string; slug: string }[]
+}
+
+const STATIC_CATEGORIES = [
+  { name: 'Technology', slug: 'technology' },
+  { name: 'Business', slug: 'business' },
+  { name: 'Science', slug: 'science' },
+  { name: 'General', slug: 'general' },
+]
+
+export default function Navbar({ categories }: NavbarProps) {
+  const { isAuthenticated, isAdmin, user, plan } = useAuth()
+  const pathname = usePathname()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [isDark, setIsDark] = useState(false)
   const [today, setToday] = useState('')
+
+  // Use dynamic categories from Strapi, fall back to static
+  const cats = categories && categories.length > 0 ? categories : STATIC_CATEGORIES
 
   useEffect(() => {
     const stored = localStorage.getItem('theme')
@@ -27,6 +42,11 @@ export default function Navbar() {
       day: 'numeric',
     }))
   }, [])
+
+  // Close drawer on route change
+  useEffect(() => {
+    setDrawerOpen(false)
+  }, [pathname])
 
   const toggleTheme = () => {
     const next = !isDark
@@ -52,14 +72,10 @@ export default function Navbar() {
                 {isDark ? (
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="5" />
-                    <line x1="12" y1="1" x2="12" y2="3" />
-                    <line x1="12" y1="21" x2="12" y2="23" />
-                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                    <line x1="1" y1="12" x2="3" y2="12" />
-                    <line x1="21" y1="12" x2="23" y2="12" />
-                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                    <line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" />
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                    <line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" />
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
                   </svg>
                 ) : (
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -107,17 +123,32 @@ export default function Navbar() {
         {/* Section navigation — sticky */}
         <nav className="border-b border-[var(--border)] sticky top-0 z-40 bg-[var(--bg)]">
           <div className="max-w-7xl mx-auto px-4">
-            {/* Desktop */}
+            {/* Desktop — dynamic categories */}
             <div className="hidden md:flex items-center justify-center gap-0 h-11 overflow-x-auto scrollbar-hide">
-              {NAV_ITEMS.map((item) => (
+              <Link
+                href="/"
+                className="px-4 py-3 text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors whitespace-nowrap border-b-2 border-transparent hover:border-[var(--text)]"
+              >
+                Home
+              </Link>
+              {cats.map((cat) => (
                 <Link
-                  key={item.href}
-                  href={item.href}
+                  key={cat.slug}
+                  href={`/?category=${cat.slug}`}
                   className="px-4 py-3 text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors whitespace-nowrap border-b-2 border-transparent hover:border-[var(--text)]"
                 >
-                  {item.label}
+                  {cat.name}
                 </Link>
               ))}
+              <Link href="/search" className="px-4 py-3 text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors whitespace-nowrap border-b-2 border-transparent hover:border-[var(--text)]">
+                Search
+              </Link>
+              <Link href="/plans" className="px-4 py-3 text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors whitespace-nowrap border-b-2 border-transparent hover:border-[var(--text)]">
+                Plans
+              </Link>
+              <Link href="/api-docs" className="px-4 py-3 text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors whitespace-nowrap border-b-2 border-transparent hover:border-[var(--text)]">
+                API Docs
+              </Link>
             </div>
 
             {/* Mobile */}
@@ -166,32 +197,26 @@ export default function Navbar() {
               </button>
             </div>
 
-            {/* News Categories */}
+            {/* News Categories — dynamic from Strapi */}
             <div className="px-4 pt-5 pb-2">
               <h3 className="text-[0.65rem] uppercase tracking-[0.15em] text-[var(--muted)] font-medium mb-2 px-1">
                 News Categories
               </h3>
               <nav className="space-y-0">
-                <Link href="/" onClick={() => setDrawerOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--text)] hover:bg-[var(--surface)] transition-colors">
+                <Link href="/" className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--text)] hover:bg-[var(--surface)] transition-colors">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                   All Stories
                 </Link>
-                <Link href="/?category=technology" onClick={() => setDrawerOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-                  Technology
-                </Link>
-                <Link href="/?category=business" onClick={() => setDrawerOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                  Business
-                </Link>
-                <Link href="/?category=science" onClick={() => setDrawerOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 2v8L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45L14 10V2"/><line x1="8.5" y1="2" x2="15.5" y2="2"/><line x1="7" y1="16" x2="17" y2="16"/></svg>
-                  Science
-                </Link>
-                <Link href="/?category=general" onClick={() => setDrawerOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/></svg>
-                  General
-                </Link>
+                {cats.map((cat) => (
+                  <Link
+                    key={cat.slug}
+                    href={`/?category=${cat.slug}`}
+                    className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/></svg>
+                    {cat.name}
+                  </Link>
+                ))}
               </nav>
             </div>
 
@@ -203,15 +228,15 @@ export default function Navbar() {
                 Tools &amp; Resources
               </h3>
               <nav className="space-y-0">
-                <Link href="/search" onClick={() => setDrawerOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors">
+                <Link href="/search" className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                   Search &amp; Archive
                 </Link>
-                <Link href="/plans" onClick={() => setDrawerOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors">
+                <Link href="/plans" className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
                   Plans &amp; Pricing
                 </Link>
-                <Link href="/api-docs" onClick={() => setDrawerOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors">
+                <Link href="/api-docs" className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
                   API Documentation
                 </Link>
@@ -220,16 +245,22 @@ export default function Navbar() {
 
             <hr className="mx-4 border-[var(--border)]" />
 
-            {/* Account */}
+            {/* Account — dynamic based on auth state */}
             <div className="px-4 pt-4 pb-4">
               <h3 className="text-[0.65rem] uppercase tracking-[0.15em] text-[var(--muted)] font-medium mb-2 px-1">
                 Account
               </h3>
               {isAuthenticated ? (
                 <div className="space-y-1">
-                  <p className="text-xs text-[var(--muted)] px-3 py-1">{user?.email}</p>
+                  <div className="px-3 py-2 border border-[var(--border)] bg-[var(--surface)] mb-2">
+                    <p className="text-sm font-medium text-[var(--text)]">{user?.name || 'User'}</p>
+                    <p className="text-xs text-[var(--muted)]">{user?.email}</p>
+                    <span className="inline-block mt-1 text-[0.65rem] uppercase tracking-wider text-[var(--accent)] font-medium">
+                      {plan} plan
+                    </span>
+                  </div>
                   {isAdmin && (
-                    <Link href="/dashboard" onClick={() => setDrawerOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors">
+                    <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
                       Dashboard
                     </Link>
@@ -241,13 +272,13 @@ export default function Navbar() {
                 </div>
               ) : (
                 <div className="space-y-2 mt-1">
-                  <Link href="/login" onClick={() => setDrawerOpen(false)}>
+                  <Link href="/login">
                     <button className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm border border-[var(--border)] hover:bg-[var(--surface)] transition-colors">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
                       Sign in
                     </button>
                   </Link>
-                  <Link href="/plans" onClick={() => setDrawerOpen(false)}>
+                  <Link href="/plans">
                     <button className="w-full px-3 py-2.5 text-sm bg-[var(--text)] text-[var(--bg)] font-medium hover:opacity-90 transition-opacity">
                       Subscribe
                     </button>

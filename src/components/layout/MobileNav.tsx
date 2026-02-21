@@ -2,22 +2,41 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { MOBILE_NAV } from '@/constants/nav'
+import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
 
 export default function MobileNav() {
   const pathname = usePathname()
+  const { isAuthenticated, isAdmin } = useAuth()
 
   if (pathname.startsWith('/dashboard')) return null
+
+  // Dynamic nav items based on auth state
+  const items = [
+    { label: 'Home', href: '/', icon: 'Home' },
+    { label: 'Search', href: '/search', icon: 'Search' },
+    { label: 'Plans', href: '/plans', icon: 'CreditCard' },
+    ...(isAuthenticated && isAdmin
+      ? [{ label: 'Dashboard', href: '/dashboard', icon: 'Dashboard' }]
+      : []),
+    ...(isAuthenticated
+      ? [{ label: 'Account', href: '/dashboard', icon: 'User' }]
+      : [{ label: 'Sign in', href: '/login', icon: 'User' }]),
+  ]
+
+  // Deduplicate if admin (Dashboard + Account both go to /dashboard)
+  const uniqueItems = items.filter(
+    (item, index, self) => index === self.findIndex((t) => t.href === item.href)
+  )
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[var(--bg)]/80 backdrop-blur-lg border-t border-[var(--border)] safe-area-bottom">
       <div className="flex items-center justify-around h-16">
-        {MOBILE_NAV.map((item) => {
-          const isActive = pathname === item.href
+        {uniqueItems.map((item) => {
+          const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))
           return (
             <Link
-              key={item.href}
+              key={item.href + item.label}
               href={item.href}
               className={cn(
                 'flex flex-col items-center justify-center gap-1 flex-1 h-full min-w-[48px] text-xs font-medium transition-colors relative',
@@ -51,6 +70,13 @@ function getIcon(name: string, active: boolean) {
           <polyline points="9 22 9 12 15 12 15 22" />
         </svg>
       )
+    case 'Search':
+      return (
+        <svg {...props}>
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+      )
     case 'CreditCard':
       return (
         <svg {...props}>
@@ -58,11 +84,13 @@ function getIcon(name: string, active: boolean) {
           <line x1="1" y1="10" x2="23" y2="10" />
         </svg>
       )
-    case 'Code':
+    case 'Dashboard':
       return (
         <svg {...props}>
-          <polyline points="16 18 22 12 16 6" />
-          <polyline points="8 6 2 12 8 18" />
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="14" y="14" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
         </svg>
       )
     case 'User':
