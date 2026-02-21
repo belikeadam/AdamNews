@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
+import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import ArticleBody from '@/components/article/ArticleBody'
 import ArticleToolbar from '@/components/article/ArticleToolbar'
@@ -11,6 +12,7 @@ import ArticleCard from '@/components/reader/ArticleCard'
 import AdSlot from '@/components/shared/AdSlot'
 import { getArticleBySlug, getRelatedArticles } from '@/lib/api/strapi'
 import { formatDate, relativeTime, getArticleCoverUrl } from '@/lib/utils'
+import { auth } from '@/lib/auth'
 
 export const revalidate = 60
 
@@ -28,9 +30,34 @@ export async function generateMetadata({
     const article = res.data[0]
     if (!article) return { title: 'Article Not Found' }
 
+    const a = article.attributes
+    const coverUrl = getArticleCoverUrl(
+      a.cover?.data?.attributes?.url,
+      slug,
+      1200,
+      630,
+      a.coverUrl
+    )
+    const articleUrl = `https://adam-news.vercel.app/articles/${slug}`
+
     return {
-      title: article.attributes.title,
-      description: article.attributes.excerpt || '',
+      title: a.title,
+      description: a.excerpt || '',
+      openGraph: {
+        title: a.title,
+        description: a.excerpt || '',
+        url: articleUrl,
+        type: 'article',
+        publishedTime: a.publishedAt || undefined,
+        authors: a.author?.data?.attributes?.name ? [a.author.data.attributes.name] : undefined,
+        images: [{ url: coverUrl, width: 1200, height: 630, alt: a.title }],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: a.title,
+        description: a.excerpt || '',
+        images: [coverUrl],
+      },
     }
   } catch {
     return { title: 'Article' }
@@ -55,6 +82,11 @@ export default async function ArticlePage({ params }: PageProps) {
   const categoryName = a.category?.data?.attributes?.name
   const author = a.author?.data
 
+  // Check subscription access for premium articles
+  const session = await auth()
+  const userPlan = session?.user?.plan || 'free'
+  const hasAccess = !a.premium || userPlan === 'premium' || userPlan === 'standard'
+
   let related = null
   if (categorySlug) {
     try {
@@ -64,17 +96,44 @@ export default async function ArticlePage({ params }: PageProps) {
     }
   }
 
+  // JSON-LD structured data for SEO
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'NewsArticle',
+    headline: a.title,
+    description: a.excerpt || '',
+    image: getArticleCoverUrl(a.cover?.data?.attributes?.url, slug, 1200, 630, a.coverUrl),
+    datePublished: a.publishedAt || undefined,
+    dateModified: a.updatedAt || a.publishedAt || undefined,
+    author: author
+      ? { '@type': 'Person', name: author.attributes.name }
+      : undefined,
+    publisher: {
+      '@type': 'Organization',
+      name: 'The Adam News',
+      url: 'https://adam-news.vercel.app',
+    },
+    mainEntityOfPage: `https://adam-news.vercel.app/articles/${slug}`,
+  }
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <ReadingProgress />
       <ArticleAnalytics slug={slug} />
 
       {/* Full-bleed cover image */}
       <div className="relative aspect-[2/1] sm:aspect-[5/2] lg:aspect-[3/1] bg-[var(--surface-2)] overflow-hidden">
-        <img
+        <Image
           src={getArticleCoverUrl(a.cover?.data?.attributes?.url, slug, 1200, 800, a.coverUrl)}
           alt={a.title}
-          className="w-full h-full object-cover"
+          fill
+          sizes="100vw"
+          priority
+          className="object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg)] via-transparent to-transparent" />
       </div>
@@ -147,11 +206,11 @@ export default async function ArticlePage({ params }: PageProps) {
         <ArticleBody
           body={a.body}
           premium={a.premium}
-          hasAccess={!a.premium}
+          hasAccess={hasAccess}
         />
 
-        {/* Paywall gate for premium articles */}
-        {a.premium && <PaywallGate />}
+        {/* Paywall gate for premium articles without access */}
+        {a.premium && !hasAccess && <PaywallGate />}
 
         {/* In-article ad */}
         <AdSlot position="in-article" className="mt-8" />

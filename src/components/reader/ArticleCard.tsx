@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { relativeTime, getArticleCoverUrl, truncate } from '@/lib/utils'
 import type { Article } from '@/types'
 
@@ -101,8 +102,7 @@ export default function ArticleCard({ article, variant = 'default' }: ArticleCar
     return (
       <Link href={`/articles/${a.slug}`} className="group flex gap-4 py-4">
         <div className="relative w-24 h-16 sm:w-28 sm:h-20 flex-shrink-0 overflow-hidden bg-[var(--surface-2)]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={coverUrl} alt={a.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+            <Image src={coverUrl} alt={a.title} fill sizes="112px" className="object-cover group-hover:scale-105 transition-transform duration-300" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
@@ -147,11 +147,12 @@ export default function ArticleCard({ article, variant = 'default' }: ArticleCar
   return (
     <Link href={`/articles/${a.slug}`} className="group block pb-6 border-b border-[var(--border)]">
       <div className="relative aspect-[16/10] overflow-hidden mb-3 bg-[var(--surface-2)]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           src={coverUrl}
           alt={a.title}
-          className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500 ease-out"
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          className="object-cover group-hover:scale-[1.03] transition-transform duration-500 ease-out"
         />
         <BookmarkButton article={article} />
         {a.trending && (

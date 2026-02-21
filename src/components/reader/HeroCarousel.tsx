@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { getArticleCoverUrl, relativeTime } from '@/lib/utils'
 import type { Article } from '@/types'
 
@@ -66,11 +67,13 @@ export default function HeroCarousel({ articles, interval = 5000 }: HeroCarousel
               }`}
               aria-hidden={index !== currentIndex}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={imgUrl}
                 alt={a.title}
-                className="absolute inset-0 w-full h-full object-cover"
+                fill
+                sizes="100vw"
+                priority={index === 0}
+                className="object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/5" />
             </div>
