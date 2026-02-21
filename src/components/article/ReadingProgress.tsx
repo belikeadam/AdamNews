@@ -23,7 +23,7 @@ export default function ReadingProgress({ color }: ReadingProgressProps) {
   }, [])
 
   return (
-    <div className="fixed top-[2.75rem] left-0 right-0 z-50 h-[2px] bg-transparent pointer-events-none">
+    <div className="fixed top-0 left-0 right-0 z-50 h-[2px] bg-transparent pointer-events-none">
       <div
         className="h-full transition-[width] duration-75 ease-linear"
         style={{ width: `${progress}%`, backgroundColor: color || 'var(--accent)' }}
