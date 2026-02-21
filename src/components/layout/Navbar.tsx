@@ -66,6 +66,7 @@ export default function Navbar({ categories }: NavbarProps) {
   const cats = categories && categories.length > 0 ? categories : STATIC_CATEGORIES
   const activeCategory = pathname === '/' ? searchParams.get('category') : null
   const closeDrawer = useCallback(() => setDrawerOpen(false), [])
+  const isDashboard = pathname.startsWith('/dashboard')
 
   useEffect(() => {
     const stored = localStorage.getItem('theme')
@@ -130,8 +131,8 @@ export default function Navbar({ categories }: NavbarProps) {
   return (
     <>
       <header>
-        {/* Top utility bar */}
-        <div className="border-b border-[var(--border)]">
+        {/* Top utility bar — hidden on mobile in dashboard */}
+        <div className={`border-b border-[var(--border)]${isDashboard ? ' hidden md:block' : ''}`}>
           <div className="max-w-7xl mx-auto px-4 h-8 flex items-center justify-between text-xs text-[var(--muted)]">
             <div className="flex items-center gap-2">
               <span className="hidden sm:inline" suppressHydrationWarning>{today}</span>
@@ -175,8 +176,8 @@ export default function Navbar({ categories }: NavbarProps) {
           </div>
         </div>
 
-        {/* Centered masthead */}
-        <div className="py-5 md:py-7 text-center border-b-2 border-[var(--rule)]">
+        {/* Centered masthead — hidden on mobile in dashboard */}
+        <div className={`py-5 md:py-7 text-center border-b-2 border-[var(--rule)]${isDashboard ? ' hidden md:block' : ''}`}>
           <Link href="/" className="inline-block">
             <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-[var(--text)]" style={{ fontFamily: 'var(--font-headline)' }}>
               {SITE_NAME_UPPER}

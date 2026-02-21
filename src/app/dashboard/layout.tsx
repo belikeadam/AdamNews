@@ -2,7 +2,6 @@ import Sidebar from '@/components/layout/Sidebar'
 import DashboardMobileNav from '@/components/layout/DashboardMobileNav'
 import DashboardFAB from '@/components/dashboard/DashboardFAB'
 import TechBar from '@/components/layout/TechBar'
-import DemoBanner from '@/components/shared/DemoBanner'
 
 export default function DashboardLayout({
   children,
@@ -11,15 +10,17 @@ export default function DashboardLayout({
 }) {
   return (
     <>
-      <TechBar
-        badges={[
-          { label: 'CSR', tooltip: 'Client-side rendered dashboard', variant: 'purple' },
-          { label: 'Protected', tooltip: 'Middleware guards — admin only' },
-          { label: 'Admin only', tooltip: 'Requires role === admin in JWT' },
-          { label: 'NextAuth v5', tooltip: 'Session managed by Auth.js' },
-        ]}
-      />
-      <DemoBanner />
+      {/* TechBar: hidden on mobile, visible on desktop for reviewers */}
+      <div className="hidden md:block">
+        <TechBar
+          badges={[
+            { label: 'CSR', tooltip: 'Client-side rendered dashboard', variant: 'purple' },
+            { label: 'Protected', tooltip: 'Middleware guards — admin only' },
+            { label: 'Admin only', tooltip: 'Requires role === admin in JWT' },
+            { label: 'NextAuth v5', tooltip: 'Session managed by Auth.js' },
+          ]}
+        />
+      </div>
       <DashboardMobileNav />
       <div className="flex flex-1">
         <Sidebar />
