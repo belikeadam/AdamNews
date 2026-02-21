@@ -52,6 +52,7 @@ export default function Navbar({ categories }: NavbarProps) {
   const [today, setToday] = useState('')
 
   const cats = categories && categories.length > 0 ? categories : STATIC_CATEGORIES
+  const activeCategory = pathname === '/' ? searchParams.get('category') : null
   const closeDrawer = useCallback(() => setDrawerOpen(false), [])
 
   useEffect(() => {
@@ -110,6 +111,10 @@ export default function Navbar({ categories }: NavbarProps) {
                 <NavIcon name={isDark ? 'sun' : 'moon'} />
               </button>
               <span className="text-[var(--border)]">|</span>
+              <a href={`${process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'}/admin`} target="_blank" rel="noopener noreferrer" className="hidden md:inline hover:text-[var(--text)] transition-colors">
+                CMS Admin
+              </a>
+              <span className="hidden md:inline text-[var(--border)]">|</span>
               <div className="hidden md:flex items-center gap-3">
                 {isAuthenticated ? (
                   <>
@@ -144,16 +149,16 @@ export default function Navbar({ categories }: NavbarProps) {
           <div className="max-w-7xl mx-auto px-4">
             {/* Desktop — uses same cats data */}
             <div className="hidden md:flex items-center justify-center gap-0 h-11 overflow-x-auto scrollbar-hide">
-              <Link href="/" className="px-4 py-3 text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors whitespace-nowrap border-b-2 border-transparent hover:border-[var(--text)]">
+              <Link href="/" className={`px-4 py-3 text-sm whitespace-nowrap border-b-2 transition-colors ${pathname === '/' && !activeCategory ? 'text-[var(--text)] border-[var(--text)]' : 'text-[var(--muted)] border-transparent hover:text-[var(--text)] hover:border-[var(--text)]'}`}>
                 Home
               </Link>
               {cats.map((cat) => (
-                <Link key={cat.slug} href={`/?category=${cat.slug}`} className="px-4 py-3 text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors whitespace-nowrap border-b-2 border-transparent hover:border-[var(--text)]">
+                <Link key={cat.slug} href={`/?category=${cat.slug}`} className={`px-4 py-3 text-sm whitespace-nowrap border-b-2 transition-colors ${activeCategory === cat.slug ? 'text-[var(--text)] border-[var(--text)]' : 'text-[var(--muted)] border-transparent hover:text-[var(--text)] hover:border-[var(--text)]'}`}>
                   {cat.name}
                 </Link>
               ))}
               {TOOL_LINKS.map((link) => (
-                <Link key={link.href} href={link.href} className="px-4 py-3 text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors whitespace-nowrap border-b-2 border-transparent hover:border-[var(--text)]">
+                <Link key={link.href} href={link.href} className={`px-4 py-3 text-sm whitespace-nowrap border-b-2 transition-colors ${pathname === link.href ? 'text-[var(--text)] border-[var(--text)]' : 'text-[var(--muted)] border-transparent hover:text-[var(--text)] hover:border-[var(--text)]'}`}>
                   {link.label.split(' & ')[0]}
                 </Link>
               ))}
@@ -215,6 +220,17 @@ export default function Navbar({ categories }: NavbarProps) {
                     {link.label}
                   </DrawerLink>
                 ))}
+                <a
+                  href={`${process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'}/admin`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={closeDrawer}
+                  className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors"
+                >
+                  <NavIcon name="dashboard" />
+                  CMS Admin
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-auto opacity-40"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                </a>
               </nav>
             </div>
 

@@ -239,3 +239,37 @@ body {
 .prose ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 1.25rem; }
 .prose ol { list-style: decimal; padding-left: 1.5rem; margin-bottom: 1.25rem; }
 .prose li { margin-bottom: 0.375rem; line-height: 1.7; }
+
+/* ── Micro-interactions ── */
+
+/* Card press effect — subtle scale on active tap (mobile) */
+.card-press:active {
+  transform: scale(0.98);
+  transition: transform 0.1s ease-out;
+}
+
+/* Staggered fade-in for grids */
+@keyframes staggerFadeIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-stagger > * {
+  animation: staggerFadeIn 0.5s ease-out both;
+}
+.animate-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.animate-stagger > *:nth-child(2) { animation-delay: 80ms; }
+.animate-stagger > *:nth-child(3) { animation-delay: 160ms; }
+.animate-stagger > *:nth-child(4) { animation-delay: 240ms; }
+.animate-stagger > *:nth-child(5) { animation-delay: 320ms; }
+
+/* Image zoom on hover */
+.img-zoom {
+  overflow: hidden;
+}
+.img-zoom img {
+  transition: transform 0.5s ease-out;
+}
+.img-zoom:hover img {
+  transform: scale(1.03);
+}

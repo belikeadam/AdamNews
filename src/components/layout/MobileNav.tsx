@@ -7,21 +7,24 @@ import { cn } from '@/lib/utils'
 
 export default function MobileNav() {
   const pathname = usePathname()
-  const { isAuthenticated, isAdmin } = useAuth()
+  const { isAuthenticated, isAdmin, isLoading } = useAuth()
 
   if (pathname.startsWith('/dashboard')) return null
 
   // Dynamic nav items based on auth state
+  // While loading, show neutral "Account" to prevent flash of "Sign in"
   const items = [
     { label: 'Home', href: '/', icon: 'Home' },
     { label: 'Search', href: '/search', icon: 'Search' },
-    { label: 'Plans', href: '/plans', icon: 'CreditCard' },
+    { label: 'Saved', href: '/saved', icon: 'Bookmark' },
     ...(isAuthenticated && isAdmin
       ? [{ label: 'Dashboard', href: '/dashboard', icon: 'Dashboard' }]
       : []),
-    ...(isAuthenticated
-      ? [{ label: 'Account', href: '/dashboard', icon: 'User' }]
-      : [{ label: 'Sign in', href: '/login', icon: 'User' }]),
+    ...(isLoading
+      ? [{ label: 'Account', href: '#', icon: 'User' }]
+      : isAuthenticated
+        ? [{ label: 'Account', href: '/dashboard', icon: 'User' }]
+        : [{ label: 'Sign in', href: '/login', icon: 'User' }]),
   ]
 
   // Deduplicate if admin (Dashboard + Account both go to /dashboard)
@@ -82,6 +85,12 @@ function getIcon(name: string, active: boolean) {
         <svg {...props}>
           <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
           <line x1="1" y1="10" x2="23" y2="10" />
+        </svg>
+      )
+    case 'Bookmark':
+      return (
+        <svg {...props}>
+          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
         </svg>
       )
     case 'Dashboard':

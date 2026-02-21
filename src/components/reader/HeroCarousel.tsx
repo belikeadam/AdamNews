@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
-import { getArticleCoverUrl, formatDate } from '@/lib/utils'
+import { getArticleCoverUrl, relativeTime } from '@/lib/utils'
 import type { Article } from '@/types'
 
 interface HeroCarouselProps {
@@ -83,9 +83,21 @@ export default function HeroCarousel({ articles, interval = 5000 }: HeroCarousel
           return (
             <Link href={`/articles/${a.slug}`} className="absolute inset-0 z-20 flex items-end">
               <div className="p-6 sm:p-8 lg:p-12 max-w-7xl mx-auto w-full">
-                <span className="section-label text-white/80 mb-2 block">
-                  {a.category?.data?.attributes?.name || 'News'}
-                </span>
+                {/* Badges row */}
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="section-label text-white/80">
+                    {a.category?.data?.attributes?.name || 'News'}
+                  </span>
+                  {a.trending && (
+                    <span className="flex items-center gap-1 px-2 py-0.5 bg-white/20 backdrop-blur-sm text-white text-[0.6rem] font-bold uppercase tracking-wider rounded-sm">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                      Trending
+                    </span>
+                  )}
+                  {a.premium && (
+                    <span className="px-2 py-0.5 bg-amber-500/80 text-white text-[0.6rem] font-bold uppercase tracking-wider rounded-sm">Premium</span>
+                  )}
+                </div>
                 <h2
                   className="text-2xl sm:text-3xl lg:text-5xl font-bold text-white leading-tight line-clamp-2 max-w-3xl mb-3"
                   style={{ fontFamily: 'var(--font-headline)' }}
@@ -97,10 +109,25 @@ export default function HeroCarousel({ articles, interval = 5000 }: HeroCarousel
                     {a.excerpt}
                   </p>
                 )}
-                <span className="byline text-white/50">
-                  {a.author?.data?.attributes?.name && `By ${a.author.data.attributes.name}`}
-                  {a.publishedAt && ` · ${formatDate(a.publishedAt)}`}
-                </span>
+                {/* Rich byline with metrics */}
+                <div className="flex flex-wrap items-center gap-3 text-sm text-white/50">
+                  {a.author?.data?.attributes?.name && (
+                    <span className="font-medium text-white/70">By {a.author.data.attributes.name}</span>
+                  )}
+                  {a.publishedAt && <span>{relativeTime(a.publishedAt)}</span>}
+                  {a.readTime && (
+                    <span className="flex items-center gap-1">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      {a.readTime}
+                    </span>
+                  )}
+                  {a.views > 0 && (
+                    <span className="flex items-center gap-1">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                      {a.views >= 1000 ? `${(a.views / 1000).toFixed(1)}k` : a.views} views
+                    </span>
+                  )}
+                </div>
               </div>
             </Link>
           )

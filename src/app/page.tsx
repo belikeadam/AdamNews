@@ -52,7 +52,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       <div className="max-w-7xl mx-auto px-4 py-6 pb-20 md:pb-8">
         <HomeClient
           articles={gridArticles}
-          categories={categories.data}
           trending={trending.data}
           initialCategory={category || null}
         />

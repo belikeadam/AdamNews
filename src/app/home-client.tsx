@@ -1,36 +1,39 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useAuth } from '@/hooks/useAuth'
 import ArticleCard from '@/components/reader/ArticleCard'
-import CategoryFilter from '@/components/reader/CategoryFilter'
 import AdSlot from '@/components/shared/AdSlot'
 import NewsletterSignup from '@/components/shared/NewsletterSignup'
-import { getArticleCoverUrl, formatDate, truncate } from '@/lib/utils'
-import type { Article, Category } from '@/types'
+import { getArticleCoverUrl, relativeTime } from '@/lib/utils'
+import type { Article } from '@/types'
 
 interface HomeClientProps {
   articles: Article[]
-  categories: Category[]
   trending: Article[]
   initialCategory?: string | null
 }
 
+function getGreeting(): string {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Good morning'
+  if (hour < 17) return 'Good afternoon'
+  return 'Good evening'
+}
+
 export default function HomeClient({
   articles,
-  categories,
   trending,
   initialCategory = null,
 }: HomeClientProps) {
-  const router = useRouter()
+  const { user, isAuthenticated } = useAuth()
+  // Sync with URL — initialCategory changes on server navigation
   const [selectedCategory, setSelectedCategory] = useState<string | null>(initialCategory)
 
-  const handleCategorySelect = (slug: string | null) => {
-    setSelectedCategory(slug)
-    // Sync URL so nav links and back/forward work
-    router.push(slug ? `/?category=${slug}` : '/', { scroll: false })
-  }
+  useEffect(() => {
+    setSelectedCategory(initialCategory)
+  }, [initialCategory])
 
   const filtered = selectedCategory
     ? articles.filter(
@@ -52,11 +55,15 @@ export default function HomeClient({
 
   return (
     <>
-      <CategoryFilter
-        categories={categories}
-        selected={selectedCategory}
-        onSelect={handleCategorySelect}
-      />
+      {/* Personalized greeting */}
+      {isAuthenticated && user?.name && (
+        <div className="max-w-7xl mx-auto px-4 pt-5 pb-1 animate-fade-in">
+          <p className="text-sm text-[var(--muted)]">
+            {getGreeting()}, <span className="font-medium text-[var(--text)]">{user.name.split(' ')[0]}</span>.
+            {' '}Here&apos;s your daily brief.
+          </p>
+        </div>
+      )}
 
       {filtered.length === 0 ? (
         <div className="text-center py-16">
@@ -96,7 +103,7 @@ export default function HomeClient({
                     className="flex gap-3 group"
                   >
                     <span
-                      className="text-2xl font-bold text-[var(--border)] leading-none mt-0.5"
+                      className="text-2xl font-bold text-[var(--border)] leading-none mt-0.5 group-hover:text-[var(--accent)] transition-colors"
                       style={{ fontFamily: 'var(--font-headline)' }}
                     >
                       {i + 1}
@@ -108,9 +115,17 @@ export default function HomeClient({
                       >
                         {article.attributes.title}
                       </p>
-                      <p className="byline mt-1">
-                        {article.attributes.readTime || '3 min read'}
-                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="byline">
+                          {article.attributes.readTime || '3 min read'}
+                        </span>
+                        {article.attributes.views > 0 && (
+                          <span className="text-xs text-[var(--muted)] flex items-center gap-1">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            {article.attributes.views >= 1000 ? `${(article.attributes.views / 1000).toFixed(1)}k` : article.attributes.views}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </Link>
                 ))}
@@ -141,17 +156,22 @@ export default function HomeClient({
                     className="flex gap-3 group"
                   >
                     <span
-                      className="text-xl font-bold text-[var(--border)] leading-none mt-0.5"
+                      className="text-xl font-bold text-[var(--border)] leading-none mt-0.5 group-hover:text-[var(--accent)] transition-colors"
                       style={{ fontFamily: 'var(--font-headline)' }}
                     >
                       {i + 1}
                     </span>
-                    <p
-                      className="text-sm font-semibold text-[var(--text)] line-clamp-2 group-hover:text-[var(--accent)] transition-colors"
-                      style={{ fontFamily: 'var(--font-headline)' }}
-                    >
-                      {article.attributes.title}
-                    </p>
+                    <div>
+                      <p
+                        className="text-sm font-semibold text-[var(--text)] line-clamp-2 group-hover:text-[var(--accent)] transition-colors"
+                        style={{ fontFamily: 'var(--font-headline)' }}
+                      >
+                        {article.attributes.title}
+                      </p>
+                      <span className="byline mt-0.5 block text-xs">
+                        {article.attributes.readTime || '3 min read'}
+                      </span>
+                    </div>
                   </Link>
                 ))}
               </div>
@@ -198,8 +218,14 @@ function LeadArticle({ article }: { article: Article }) {
         <img
           src={coverUrl}
           alt={a.title}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700 ease-out"
         />
+        {a.trending && (
+          <span className="absolute top-3 left-3 z-10 flex items-center gap-1 px-2.5 py-1 bg-[var(--accent)] text-white text-[0.65rem] font-bold uppercase tracking-wider">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            Trending
+          </span>
+        )}
       </div>
       <span className="section-label">
         {a.category?.data?.attributes?.name}
@@ -212,10 +238,24 @@ function LeadArticle({ article }: { article: Article }) {
           {a.excerpt}
         </p>
       )}
-      <span className="byline">
-        {a.author?.data?.attributes?.name && `By ${a.author.data.attributes.name}`}
-        {a.publishedAt && ` · ${formatDate(a.publishedAt)}`}
-      </span>
+      <div className="flex items-center gap-3">
+        <span className="byline">
+          {a.author?.data?.attributes?.name && `By ${a.author.data.attributes.name}`}
+          {a.publishedAt && ` · ${relativeTime(a.publishedAt)}`}
+        </span>
+        {a.readTime && (
+          <span className="flex items-center gap-1 text-xs text-[var(--muted)]">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            {a.readTime}
+          </span>
+        )}
+        {a.views > 0 && (
+          <span className="flex items-center gap-1 text-xs text-[var(--muted)]">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            {a.views >= 1000 ? `${(a.views / 1000).toFixed(1)}k` : a.views}
+          </span>
+        )}
+      </div>
     </Link>
   )
 }
