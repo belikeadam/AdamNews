@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
+import Skeleton from '@/components/ui/Skeleton'
 
 interface SavedArticle {
   slug: string
@@ -33,14 +34,26 @@ export default function SavedPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-16 text-center">
-        <p className="text-[var(--muted)]">Loading...</p>
+      <div className="max-w-3xl mx-auto px-4 py-8">
+        <Skeleton className="h-8 w-48 mb-2" />
+        <Skeleton className="h-4 w-64 mb-8" />
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex gap-4 py-4 border-b border-[var(--border)]">
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-5 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 pb-24 md:pb-8">
+    <div className="max-w-3xl mx-auto px-4 pb-8">
       <div className="pt-6 sm:pt-8 pb-4 sm:pb-6 border-b border-[var(--border)] mb-6 sm:mb-8">
         <h1
           className="text-2xl sm:text-3xl font-bold text-[var(--text)] mb-2"

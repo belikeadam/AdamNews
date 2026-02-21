@@ -8,6 +8,7 @@ import Link from 'next/link'
 import Card, { CardContent } from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
+import Skeleton from '@/components/ui/Skeleton'
 import type { UserPlan } from '@/types'
 
 const PLAN_DETAILS: Record<string, { name: string; color: 'success' | 'accent' | 'warning'; features: string[] }> = {
@@ -60,8 +61,19 @@ function AccountContent() {
 
   if (isLoading || !isAuthenticated) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-20 text-center">
-        <p className="text-[var(--muted)]">Loading...</p>
+      <div className="max-w-2xl mx-auto px-4 py-10">
+        <Skeleton className="h-8 w-40 mb-6" />
+        <div className="border border-[var(--border)] p-6 mb-6 space-y-4">
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-5 w-full" />
+          <Skeleton className="h-5 w-full" />
+          <Skeleton className="h-5 w-3/4" />
+        </div>
+        <div className="border border-[var(--border)] p-6 space-y-4">
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-10 w-full" />
+        </div>
       </div>
     )
   }
@@ -70,7 +82,7 @@ function AccountContent() {
   const planInfo = PLAN_DETAILS[currentPlan] || PLAN_DETAILS.free
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-10 pb-20 md:pb-10">
+    <div className="max-w-2xl mx-auto px-4 py-10 pb-10">
       <h1
         className="text-2xl sm:text-3xl font-bold text-[var(--text)] mb-6"
         style={{ fontFamily: 'var(--font-headline)' }}
@@ -209,8 +221,13 @@ export default function AccountPage() {
   return (
     <Suspense
       fallback={
-        <div className="max-w-2xl mx-auto px-4 py-20 text-center">
-          <p className="text-[var(--muted)]">Loading...</p>
+        <div className="max-w-2xl mx-auto px-4 py-10">
+          <div className="h-8 w-40 bg-[var(--surface-2)] animate-pulse rounded mb-6" />
+          <div className="border border-[var(--border)] p-6 mb-6 space-y-4">
+            <div className="h-4 w-20 bg-[var(--surface-2)] animate-pulse rounded" />
+            <div className="h-5 w-full bg-[var(--surface-2)] animate-pulse rounded" />
+            <div className="h-5 w-3/4 bg-[var(--surface-2)] animate-pulse rounded" />
+          </div>
         </div>
       }
     >

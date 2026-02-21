@@ -9,6 +9,8 @@ import AuthorBio from '@/components/article/AuthorBio'
 import ReadingProgress from '@/components/article/ReadingProgress'
 import ArticleAnalytics from '@/components/article/ArticleAnalytics'
 import ArticleCard from '@/components/reader/ArticleCard'
+import ArticleReadingTracker from '@/components/article/ArticleReadingTracker'
+import RelatedArticles from '@/components/article/RelatedArticles'
 import AdSlot from '@/components/shared/AdSlot'
 import { getArticleBySlug, getRelatedArticles } from '@/lib/api/strapi'
 import { formatDate, relativeTime, getArticleCoverUrl } from '@/lib/utils'
@@ -124,6 +126,7 @@ export default async function ArticlePage({ params }: PageProps) {
       />
       <ReadingProgress />
       <ArticleAnalytics slug={slug} />
+      <ArticleReadingTracker slug={slug} readTime={a.readTime || undefined} />
 
       {/* Full-bleed cover image */}
       <div className="relative aspect-[5/2] sm:aspect-[2/1] lg:aspect-[3/1] bg-[var(--surface-2)] overflow-hidden">
@@ -138,7 +141,7 @@ export default async function ArticlePage({ params }: PageProps) {
         <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg)] via-transparent to-transparent" />
       </div>
 
-      <article className="max-w-3xl mx-auto px-4 pb-24 md:pb-8 relative -mt-6 sm:-mt-12 z-10">
+      <article className="max-w-3xl mx-auto px-4 pb-8 relative -mt-6 sm:-mt-12 z-10">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-[var(--muted)] mb-3 sm:mb-6">
           <Link href="/" className="hover:text-[var(--text)] transition-colors flex-shrink-0">
@@ -276,17 +279,7 @@ export default async function ArticlePage({ params }: PageProps) {
 
         {/* Related articles */}
         {related && related.data.length > 0 && (
-          <section className="mt-8 sm:mt-12">
-            <div className="flex items-center gap-4 mb-4 sm:mb-6">
-              <h2 className="section-label whitespace-nowrap">Related Articles</h2>
-              <hr className="flex-1 border-t border-[var(--border)]" />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {related.data.map((ra) => (
-                <ArticleCard key={ra.id} article={ra} />
-              ))}
-            </div>
-          </section>
+          <RelatedArticles articles={related.data} />
         )}
       </article>
     </>

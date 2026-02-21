@@ -53,17 +53,13 @@ html {
 body {
   background: var(--bg);
   color: var(--text);
+  transition: background-color 0.3s ease, color 0.2s ease;
 }
 
 /* Selection */
 ::selection {
   background: var(--accent);
   color: white;
-}
-
-/* Safe area for bottom navigation */
-.safe-area-bottom {
-  padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
 /* Hide scrollbar utility */
@@ -268,10 +264,13 @@ body {
 
 /* ── Micro-interactions ── */
 
-/* Card press effect — subtle scale on active tap (mobile) */
-.card-press:active {
-  transform: scale(0.98);
-  transition: transform 0.1s ease-out;
+/* Ken Burns effect for carousel images */
+@keyframes kenBurns {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.06); }
+}
+.animate-ken-burns {
+  animation: kenBurns 6s ease-out forwards;
 }
 
 /* Staggered fade-in for grids */

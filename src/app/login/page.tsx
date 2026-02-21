@@ -34,7 +34,7 @@ export default function LoginPage() {
       </div>
 
       {/* Right form panel */}
-      <div className="flex-1 flex items-center justify-center px-4 py-12 pb-20 md:pb-12 bg-[var(--bg)]">
+      <div className="flex-1 flex items-center justify-center px-4 py-12 bg-[var(--bg)]">
         <div className="w-full max-w-sm">
           {/* Mobile brand */}
           <div className="lg:hidden text-center mb-8">

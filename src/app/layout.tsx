@@ -4,7 +4,6 @@ import { Inter, Playfair_Display } from 'next/font/google'
 import Providers from './providers'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
-import MobileNav from '@/components/layout/MobileNav'
 import ScrollToTop from '@/components/shared/ScrollToTop'
 import DemoBanner from '@/components/shared/DemoBanner'
 import { DEFAULT_META } from '@/constants/meta'
@@ -55,7 +54,6 @@ export default async function RootLayout({
           </Suspense>
           <main className="flex-1">{children}</main>
           <Footer />
-          <MobileNav />
           <ScrollToTop />
         </Providers>
       </body>

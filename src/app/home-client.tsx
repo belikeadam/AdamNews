@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useAuth } from '@/hooks/useAuth'
 import ArticleCard from '@/components/reader/ArticleCard'
 import AdSlot from '@/components/shared/AdSlot'
 import NewsletterSignup from '@/components/shared/NewsletterSignup'
+import { ScrollReveal, ScrollStagger, ScrollStaggerItem, SlideUp, FadeIn } from '@/components/motion'
 import { getArticleCoverUrl, relativeTime } from '@/lib/utils'
 import type { Article } from '@/types'
 
@@ -30,7 +32,6 @@ export default function HomeClient({
   initialCategory = null,
 }: HomeClientProps) {
   const { user, isAuthenticated } = useAuth()
-  // Sync with URL — initialCategory changes on server navigation
   const [selectedCategory, setSelectedCategory] = useState<string | null>(initialCategory)
   const [density, setDensity] = useState<FeedDensity>('comfortable')
 
@@ -68,14 +69,43 @@ export default function HomeClient({
 
   return (
     <>
+      {/* Welcome hero for new visitors */}
+      {!isAuthenticated && (
+        <SlideUp delay={0.1} className="text-center py-6 sm:py-8 border-b border-[var(--border)] mb-6">
+          <h2
+            className="text-xl sm:text-2xl font-bold text-[var(--text)] tracking-tight"
+            style={{ fontFamily: 'var(--font-headline)' }}
+          >
+            Welcome to The Adam News
+          </h2>
+          <p className="text-sm text-[var(--muted)] mt-1.5 max-w-md mx-auto">
+            Independent journalism for Malaysia and beyond. Stay informed with quality reporting.
+          </p>
+          <div className="flex items-center justify-center gap-3 mt-4">
+            <Link
+              href="/search"
+              className="px-4 py-2 text-sm font-medium bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
+            >
+              Explore stories
+            </Link>
+            <Link
+              href="/login"
+              className="px-4 py-2 text-sm font-medium border border-[var(--border)] text-[var(--text)] hover:bg-[var(--surface)] transition-colors"
+            >
+              Sign in
+            </Link>
+          </div>
+        </SlideUp>
+      )}
+
       {/* Personalized greeting */}
       {isAuthenticated && user?.name && (
-        <div className="max-w-7xl mx-auto px-4 pt-5 pb-1 animate-fade-in">
+        <FadeIn className="max-w-7xl mx-auto pt-5 pb-1">
           <p className="text-sm text-[var(--muted)]">
             {getGreeting()}, <span className="font-medium text-[var(--text)]">{user.name.split(' ')[0]}</span>.
             {' '}Here&apos;s your daily brief.
           </p>
-        </div>
+        </FadeIn>
       )}
 
       {filtered.length === 0 ? (
@@ -88,16 +118,22 @@ export default function HomeClient({
           <div className="grid grid-cols-1 md:grid-cols-[2fr,1px,1fr] gap-0 mt-4 sm:mt-6">
             {/* Lead story + secondary */}
             <div className="pr-0 md:pr-8">
-              {leadArticle && <LeadArticle article={leadArticle} />}
+              {leadArticle && (
+                <ScrollReveal>
+                  <LeadArticle article={leadArticle} />
+                </ScrollReveal>
+              )}
 
               {secondaryArticles.length > 0 && (
                 <>
                   <hr className="section-rule" />
-                  <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
+                  <ScrollStagger className="grid sm:grid-cols-2 gap-4 sm:gap-6">
                     {secondaryArticles.map((a) => (
-                      <ArticleCard key={a.id} article={a} variant="compact" />
+                      <ScrollStaggerItem key={a.id}>
+                        <ArticleCard article={a} variant="compact" />
+                      </ScrollStaggerItem>
                     ))}
-                  </div>
+                  </ScrollStagger>
                 </>
               )}
             </div>
@@ -110,37 +146,38 @@ export default function HomeClient({
               <h3 className="section-label mb-4">Most Read</h3>
               <div className="space-y-5">
                 {trending.slice(0, 5).map((article, i) => (
-                  <Link
-                    key={article.id}
-                    href={`/articles/${article.attributes.slug}`}
-                    className="flex gap-3 group"
-                  >
-                    <span
-                      className="text-2xl font-bold text-[var(--border)] leading-none mt-0.5 group-hover:text-[var(--accent)] transition-colors"
-                      style={{ fontFamily: 'var(--font-headline)' }}
+                  <ScrollReveal key={article.id} delay={i * 0.05}>
+                    <Link
+                      href={`/articles/${article.attributes.slug}`}
+                      className="flex gap-3 group"
                     >
-                      {i + 1}
-                    </span>
-                    <div>
-                      <p
-                        className="text-sm font-semibold text-[var(--text)] line-clamp-2 group-hover:text-[var(--accent)] transition-colors"
+                      <span
+                        className="text-2xl font-bold text-[var(--border)] leading-none mt-0.5 group-hover:text-[var(--accent)] transition-colors"
                         style={{ fontFamily: 'var(--font-headline)' }}
                       >
-                        {article.attributes.title}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="byline">
-                          {article.attributes.readTime || '3 min read'}
-                        </span>
-                        {article.attributes.views > 0 && (
-                          <span className="text-xs text-[var(--muted)] flex items-center gap-1">
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                            {article.attributes.views >= 1000 ? `${(article.attributes.views / 1000).toFixed(1)}k` : article.attributes.views}
+                        {i + 1}
+                      </span>
+                      <div>
+                        <p
+                          className="text-sm font-semibold text-[var(--text)] line-clamp-2 group-hover:text-[var(--accent)] transition-colors"
+                          style={{ fontFamily: 'var(--font-headline)' }}
+                        >
+                          {article.attributes.title}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="byline">
+                            {article.attributes.readTime || '3 min read'}
                           </span>
-                        )}
+                          {article.attributes.views > 0 && (
+                            <span className="text-xs text-[var(--muted)] flex items-center gap-1">
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                              {article.attributes.views >= 1000 ? `${(article.attributes.views / 1000).toFixed(1)}k` : article.attributes.views}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </Link>
+                    </Link>
+                  </ScrollReveal>
                 ))}
               </div>
 
@@ -154,39 +191,55 @@ export default function HomeClient({
             </aside>
           </div>
 
-          {/* Mobile trending */}
+          {/* Mobile trending — horizontal scrollable card strip */}
           {trending.length > 0 && (
             <section className="md:hidden mt-8">
-              <div className="flex items-center gap-4 mb-4">
-                <h2 className="section-label">Most Read</h2>
-                <hr className="flex-1 border-t border-[var(--border)]" />
-              </div>
-              <div className="space-y-4">
-                {trending.slice(0, 5).map((article, i) => (
-                  <Link
-                    key={article.id}
-                    href={`/articles/${article.attributes.slug}`}
-                    className="flex gap-3 group"
-                  >
-                    <span
-                      className="text-xl font-bold text-[var(--border)] leading-none mt-0.5 group-hover:text-[var(--accent)] transition-colors"
-                      style={{ fontFamily: 'var(--font-headline)' }}
+              <ScrollReveal direction="left">
+                <div className="flex items-center gap-4 mb-4">
+                  <h2 className="section-label">Most Read</h2>
+                  <hr className="flex-1 border-t border-[var(--border)]" />
+                </div>
+              </ScrollReveal>
+              <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-4 -mx-4 px-4">
+                {trending.slice(0, 8).map((article, i) => {
+                  const ta = article.attributes
+                  const coverUrl = getArticleCoverUrl(
+                    ta.cover?.data?.attributes?.formats?.small?.url || ta.cover?.data?.attributes?.url,
+                    ta.slug,
+                    400,
+                    300,
+                    ta.coverUrl
+                  )
+                  return (
+                    <Link
+                      key={article.id}
+                      href={`/articles/${ta.slug}`}
+                      className="flex-shrink-0 w-[260px] snap-start group"
                     >
-                      {i + 1}
-                    </span>
-                    <div>
-                      <p
+                      <div className="relative aspect-[16/10] overflow-hidden bg-[var(--surface-2)] mb-2">
+                        <Image
+                          src={coverUrl}
+                          alt={ta.title}
+                          fill
+                          sizes="260px"
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <span className="absolute top-2 left-2 z-10 w-6 h-6 flex items-center justify-center bg-[var(--accent)] text-white text-xs font-bold">
+                          {i + 1}
+                        </span>
+                      </div>
+                      <h3
                         className="text-sm font-semibold text-[var(--text)] line-clamp-2 group-hover:text-[var(--accent)] transition-colors"
                         style={{ fontFamily: 'var(--font-headline)' }}
                       >
-                        {article.attributes.title}
-                      </p>
+                        {ta.title}
+                      </h3>
                       <span className="byline mt-0.5 block text-xs">
-                        {article.attributes.readTime || '3 min read'}
+                        {ta.readTime || '3 min read'}
                       </span>
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                  )
+                })}
               </div>
             </section>
           )}
@@ -221,10 +274,12 @@ export default function HomeClient({
 
           {Array.from(categoryGroups).map(([catName, catArticles]) => (
             <section key={catName} className="mt-8">
-              <div className="flex items-center gap-4 mb-6">
-                <h2 className="section-label whitespace-nowrap">{catName}</h2>
-                <hr className="flex-1 border-t border-[var(--border)]" />
-              </div>
+              <ScrollReveal direction="left">
+                <div className="flex items-center gap-4 mb-6">
+                  <h2 className="section-label whitespace-nowrap">{catName}</h2>
+                  <hr className="flex-1 border-t border-[var(--border)]" />
+                </div>
+              </ScrollReveal>
               {density === 'compact' ? (
                 <div className="space-y-0 divide-y divide-[var(--border)]">
                   {catArticles.slice(0, 6).map((a) => (
@@ -232,11 +287,13 @@ export default function HomeClient({
                   ))}
                 </div>
               ) : (
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 animate-stagger">
+                <ScrollStagger className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   {catArticles.slice(0, 3).map((a) => (
-                    <ArticleCard key={a.id} article={a} />
+                    <ScrollStaggerItem key={a.id}>
+                      <ArticleCard key={a.id} article={a} />
+                    </ScrollStaggerItem>
                   ))}
-                </div>
+                </ScrollStagger>
               )}
             </section>
           ))}

@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import HeroCarousel from '@/components/reader/HeroCarousel'
+import BreakingNewsBar from '@/components/reader/BreakingNewsBar'
 import { getArticles, getTrendingArticles, getCategories } from '@/lib/api/strapi'
 import HomeClient from './home-client'
 
@@ -43,13 +44,18 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
   return (
     <>
+      {/* Breaking news ticker */}
+      {trending.data.length > 0 && (
+        <BreakingNewsBar articles={trending.data.slice(0, 8)} />
+      )}
+
       {carouselArticles.length > 0 && (
         <section>
           <HeroCarousel articles={carouselArticles} />
         </section>
       )}
 
-      <div className="max-w-7xl mx-auto px-4 py-4 sm:py-6 pb-24 md:pb-8">
+      <div className="max-w-7xl mx-auto px-4 py-4 sm:py-6 pb-8">
         <HomeClient
           articles={gridArticles}
           trending={trending.data}

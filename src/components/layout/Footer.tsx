@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { SITE_NAME, SITE_NAME_UPPER } from '@/constants/meta'
+import { SITE_TAGLINE } from '@/constants/site'
 
 export default function Footer() {
   return (
@@ -14,7 +15,7 @@ export default function Footer() {
           {SITE_NAME_UPPER}
         </Link>
         <p className="text-xs text-[var(--muted)] mt-1 tracking-[0.15em] uppercase">
-          Independent Journalism Since 2024
+          {SITE_TAGLINE}
         </p>
       </div>
 

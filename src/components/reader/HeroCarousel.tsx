@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { motion, AnimatePresence, useMotionValue } from 'framer-motion'
 import { getArticleCoverUrl, relativeTime } from '@/lib/utils'
 import type { Article } from '@/types'
 
@@ -15,7 +16,9 @@ export default function HeroCarousel({ articles, interval = 5000 }: HeroCarousel
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const progressRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const slideCount = articles.length
+  const dragX = useMotionValue(0)
 
   const goToSlide = useCallback((index: number) => {
     setCurrentIndex(index)
@@ -35,7 +38,16 @@ export default function HeroCarousel({ articles, interval = 5000 }: HeroCarousel
     return () => {
       if (timerRef.current) clearInterval(timerRef.current)
     }
-  }, [isPaused, nextSlide, interval, slideCount])
+  }, [isPaused, nextSlide, interval, slideCount, currentIndex])
+
+  const handleDragEnd = (_: unknown, info: { offset: { x: number }; velocity: { x: number } }) => {
+    const threshold = 50
+    if (info.offset.x < -threshold || info.velocity.x < -500) {
+      nextSlide()
+    } else if (info.offset.x > threshold || info.velocity.x > 500) {
+      prevSlide()
+    }
+  }
 
   if (!articles.length) return null
 
@@ -47,8 +59,15 @@ export default function HeroCarousel({ articles, interval = 5000 }: HeroCarousel
       role="region"
       aria-label="Featured stories"
     >
-      {/* Slides */}
-      <div className="relative aspect-[16/9] sm:aspect-[21/9] lg:aspect-[3/1]">
+      {/* Slides with swipe */}
+      <motion.div
+        className="relative aspect-[16/9] sm:aspect-[21/9] lg:aspect-[3/1] touch-pan-y"
+        drag="x"
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.15}
+        onDragEnd={handleDragEnd}
+        style={{ x: dragX }}
+      >
         {articles.map((article, index) => {
           const { attributes: a } = article
           const imgUrl = getArticleCoverUrl(
@@ -67,89 +86,101 @@ export default function HeroCarousel({ articles, interval = 5000 }: HeroCarousel
               }`}
               aria-hidden={index !== currentIndex}
             >
-              <Image
-                src={imgUrl}
-                alt={a.title}
-                fill
-                sizes="100vw"
-                priority={index === 0}
-                className="object-cover"
-              />
+              {/* Ken Burns effect — subtle zoom + drift */}
+              <div className={`absolute inset-0 ${index === currentIndex ? 'animate-ken-burns' : ''}`}>
+                <Image
+                  src={imgUrl}
+                  alt={a.title}
+                  fill
+                  sizes="100vw"
+                  priority={index === 0}
+                  className="object-cover"
+                />
+              </div>
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/5" />
             </div>
           )
         })}
 
-        {/* Content overlay */}
-        {(() => {
-          const { attributes: a } = articles[currentIndex]
-          return (
-            <Link href={`/articles/${a.slug}`} className="absolute inset-0 z-20 flex items-end">
-              <div className="p-6 sm:p-8 lg:p-12 max-w-7xl mx-auto w-full">
-                {/* Badges row */}
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="section-label text-white/80">
-                    {a.category?.data?.attributes?.name || 'News'}
-                  </span>
-                  {a.trending && (
-                    <span className="flex items-center gap-1 px-2 py-0.5 bg-white/20 backdrop-blur-sm text-white text-[0.6rem] font-bold uppercase tracking-wider rounded-sm">
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-                      Trending
+        {/* Content overlay with entrance animation */}
+        <AnimatePresence mode="wait">
+          {(() => {
+            const { attributes: a } = articles[currentIndex]
+            return (
+              <motion.div
+                key={currentIndex}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.4, ease: 'easeOut' }}
+                className="absolute inset-0 z-20 flex items-end pointer-events-none"
+              >
+                <Link href={`/articles/${a.slug}`} className="p-6 sm:p-8 lg:p-12 max-w-7xl mx-auto w-full pointer-events-auto">
+                  {/* Badges row */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="section-label text-white/80">
+                      {a.category?.data?.attributes?.name || 'News'}
                     </span>
+                    {a.trending && (
+                      <span className="flex items-center gap-1 px-2 py-0.5 bg-white/20 backdrop-blur-sm text-white text-[0.6rem] font-bold uppercase tracking-wider rounded-sm">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                        Trending
+                      </span>
+                    )}
+                    {a.premium && (
+                      <span className="px-2 py-0.5 bg-amber-500/80 text-white text-[0.6rem] font-bold uppercase tracking-wider rounded-sm">Premium</span>
+                    )}
+                  </div>
+                  <h2
+                    className="text-2xl sm:text-3xl lg:text-5xl font-bold text-white leading-tight line-clamp-2 max-w-3xl mb-3"
+                    style={{ fontFamily: 'var(--font-headline)' }}
+                  >
+                    {a.title}
+                  </h2>
+                  {a.excerpt && (
+                    <p className="text-white/75 text-sm sm:text-base lg:text-lg line-clamp-2 max-w-2xl mb-3 hidden sm:block">
+                      {a.excerpt}
+                    </p>
                   )}
-                  {a.premium && (
-                    <span className="px-2 py-0.5 bg-amber-500/80 text-white text-[0.6rem] font-bold uppercase tracking-wider rounded-sm">Premium</span>
-                  )}
-                </div>
-                <h2
-                  className="text-2xl sm:text-3xl lg:text-5xl font-bold text-white leading-tight line-clamp-2 max-w-3xl mb-3"
-                  style={{ fontFamily: 'var(--font-headline)' }}
-                >
-                  {a.title}
-                </h2>
-                {a.excerpt && (
-                  <p className="text-white/75 text-sm sm:text-base lg:text-lg line-clamp-2 max-w-2xl mb-3">
-                    {a.excerpt}
-                  </p>
-                )}
-                {/* Rich byline with metrics */}
-                <div className="flex flex-wrap items-center gap-3 text-sm text-white/50">
-                  {a.author?.data?.attributes?.name && (
-                    <span className="font-medium text-white/70">By {a.author.data.attributes.name}</span>
-                  )}
-                  {a.publishedAt && <span>{relativeTime(a.publishedAt)}</span>}
-                  {a.readTime && (
-                    <span className="flex items-center gap-1">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                      {a.readTime}
-                    </span>
-                  )}
-                  {a.views > 0 && (
-                    <span className="flex items-center gap-1">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                      {a.views >= 1000 ? `${(a.views / 1000).toFixed(1)}k` : a.views} views
-                    </span>
-                  )}
-                </div>
-              </div>
-            </Link>
-          )
-        })()}
-      </div>
+                  {/* Rich byline */}
+                  <div className="flex flex-wrap items-center gap-3 text-sm text-white/50">
+                    {a.author?.data?.attributes?.name && (
+                      <span className="font-medium text-white/70">By {a.author.data.attributes.name}</span>
+                    )}
+                    {a.publishedAt && <span>{relativeTime(a.publishedAt)}</span>}
+                    {a.readTime && (
+                      <span className="flex items-center gap-1">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        {a.readTime}
+                      </span>
+                    )}
+                    {a.views > 0 && (
+                      <span className="flex items-center gap-1 hidden sm:flex">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        {a.views >= 1000 ? `${(a.views / 1000).toFixed(1)}k` : a.views} views
+                      </span>
+                    )}
+                  </div>
+                </Link>
+              </motion.div>
+            )
+          })()}
+        </AnimatePresence>
+      </motion.div>
 
-      {/* Arrows */}
+      {/* Arrows — hidden on mobile (swipe instead) */}
       {slideCount > 1 && (
         <>
           <button
             onClick={prevSlide}
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center bg-black/30 hover:bg-black/50 text-white rounded-full transition-colors"
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 hidden sm:flex items-center justify-center bg-black/30 hover:bg-black/50 text-white rounded-full transition-colors"
             aria-label="Previous"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
           </button>
           <button
             onClick={nextSlide}
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center bg-black/30 hover:bg-black/50 text-white rounded-full transition-colors"
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 hidden sm:flex items-center justify-center bg-black/30 hover:bg-black/50 text-white rounded-full transition-colors"
             aria-label="Next"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
@@ -157,22 +188,36 @@ export default function HeroCarousel({ articles, interval = 5000 }: HeroCarousel
         </>
       )}
 
-      {/* Dots */}
+      {/* Progress bar (replaces dots on mobile, dots remain on desktop) */}
       {slideCount > 1 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2">
-          {articles.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => goToSlide(index)}
-              className={`h-2 rounded-full transition-all duration-300 ${
-                index === currentIndex
-                  ? 'bg-white w-6'
-                  : 'bg-white/40 hover:bg-white/70 w-2'
-              }`}
-              aria-label={`Slide ${index + 1}`}
+        <>
+          {/* Mobile: progress bar */}
+          <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/20 z-30 sm:hidden">
+            <motion.div
+              key={currentIndex}
+              className="h-full bg-white/70"
+              initial={{ width: '0%' }}
+              animate={{ width: '100%' }}
+              transition={{ duration: interval / 1000, ease: 'linear' }}
             />
-          ))}
-        </div>
+          </div>
+
+          {/* Desktop: dots */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 hidden sm:flex items-center gap-2">
+            {articles.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => goToSlide(index)}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  index === currentIndex
+                    ? 'bg-white w-6'
+                    : 'bg-white/40 hover:bg-white/70 w-2'
+                }`}
+                aria-label={`Slide ${index + 1}`}
+              />
+            ))}
+          </div>
+        </>
       )}
     </div>
   )
