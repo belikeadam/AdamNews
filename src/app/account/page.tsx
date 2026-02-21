@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useAuth } from '@/hooks/useAuth'
@@ -28,7 +28,7 @@ const PLAN_DETAILS: Record<string, { name: string; color: 'success' | 'accent' |
   },
 }
 
-export default function AccountPage() {
+function AccountContent() {
   const { user, isAuthenticated, isLoading, plan } = useAuth()
   const { update } = useSession()
   const searchParams = useSearchParams()
@@ -202,5 +202,19 @@ export default function AccountPage() {
         </Link>
       </div>
     </div>
+  )
+}
+
+export default function AccountPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="max-w-2xl mx-auto px-4 py-20 text-center">
+          <p className="text-[var(--muted)]">Loading...</p>
+        </div>
+      }
+    >
+      <AccountContent />
+    </Suspense>
   )
 }
