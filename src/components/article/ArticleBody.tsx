@@ -2,6 +2,7 @@ interface ArticleBodyProps {
   body: unknown
   premium: boolean
   hasAccess: boolean
+  excerpt?: string | null
 }
 
 /** Convert markdown string to HTML */
@@ -96,33 +97,54 @@ function bodyToHtml(body: unknown): string {
   return '<p>Article content unavailable.</p>'
 }
 
+/** Strip HTML tags to get plain text length */
+function textLength(html: string): number {
+  return html.replace(/<[^>]*>/g, '').trim().length
+}
+
 export default function ArticleBody({
   body,
   premium,
   hasAccess,
+  excerpt,
 }: ArticleBodyProps) {
   const htmlContent = bodyToHtml(body)
+  const contentLength = textLength(htmlContent)
+  const isShortContent = contentLength < 300
 
-  // For premium without access, show first few blocks then fade
-  let truncated = htmlContent
+  // For premium without access, show teaser then cut off
+  let displayContent = htmlContent
   if (premium && !hasAccess) {
-    // Split on block-level elements
-    const blockRegex = /<\/(p|h[1-6]|blockquote|ul|ol)>/g
-    const matches = [...htmlContent.matchAll(blockRegex)]
-    if (matches.length > 4) {
-      const cutoff = (matches[3].index ?? 0) + matches[3][0].length
-      truncated = htmlContent.slice(0, cutoff)
+    if (isShortContent) {
+      // Short body — show it all as teaser, paywall goes right below
+      displayContent = htmlContent
+    } else {
+      // Longer body — truncate at 4 blocks
+      const blockRegex = /<\/(p|h[1-6]|blockquote|ul|ol)>/g
+      const matches = [...htmlContent.matchAll(blockRegex)]
+      if (matches.length > 4) {
+        const cutoff = (matches[3].index ?? 0) + matches[3][0].length
+        displayContent = htmlContent.slice(0, cutoff)
+      }
     }
   }
 
   return (
     <div className="relative">
+      {/* Lead excerpt for short articles */}
+      {isShortContent && excerpt && (
+        <p className="text-xl leading-relaxed text-[var(--muted)] mb-6 italic border-l-4 border-[var(--accent)] pl-4">
+          {excerpt}
+        </p>
+      )}
+
       <div
         className="prose prose-lg dark:prose-invert max-w-none"
-        dangerouslySetInnerHTML={{ __html: truncated }}
+        dangerouslySetInnerHTML={{ __html: displayContent }}
       />
 
-      {premium && !hasAccess && (
+      {/* Fade overlay for premium gated content */}
+      {premium && !hasAccess && !isShortContent && (
         <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[var(--bg)] to-transparent pointer-events-none" />
       )}
     </div>

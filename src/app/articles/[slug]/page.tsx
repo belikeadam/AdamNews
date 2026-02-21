@@ -202,21 +202,35 @@ export default async function ArticlePage({ params }: PageProps) {
           category={categoryName || undefined}
         />
 
+        {/* Premium access banner for subscribers viewing premium content */}
+        {a.premium && hasAccess && (
+          <div className="flex items-center gap-2 mb-6 px-4 py-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-600 dark:text-emerald-400 flex-shrink-0">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+            <span className="text-sm text-emerald-700 dark:text-emerald-300">
+              Premium article — You have full access with your {userPlan} plan
+            </span>
+          </div>
+        )}
+
         {/* Article body */}
         <ArticleBody
           body={a.body}
           premium={a.premium}
           hasAccess={hasAccess}
+          excerpt={a.excerpt}
         />
 
         {/* Paywall gate for premium articles without access */}
         {a.premium && !hasAccess && <PaywallGate />}
 
-        {/* In-article ad */}
-        <AdSlot position="in-article" className="mt-8" />
+        {/* In-article ad (only if not gated) */}
+        {hasAccess && <AdSlot position="in-article" className="mt-8" />}
 
         {/* Share row */}
-        <div className="flex items-center gap-2 mt-10 pt-6 border-t border-[var(--border)]">
+        <div className="flex items-center gap-2 mt-8 pt-6 border-t border-[var(--border)]">
           <span className="text-sm font-medium text-[var(--muted)] mr-1">Share this article</span>
           <a
             href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(a.title)}&url=${encodeURIComponent(`https://adam-news.vercel.app/articles/${slug}`)}`}
