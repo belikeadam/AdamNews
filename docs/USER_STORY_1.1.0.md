@@ -2,7 +2,7 @@
 
 > **Epic**: Transform Adam News from a standard news platform into an AI-augmented intelligent news experience
 > **Priority**: Critical (pre-submission to REV Media Group)
-> **AI Providers**: Groq LLaMA 3.1 70B (primary) + Google Gemini 2.5 Flash (fallback & translation)
+> **AI Providers**: Groq LLaMA 3.3 70B (primary) + Google Gemini 2.5 Flash (fallback)
 > **API Keys**: Both configured in Vercel environment
 > **New Dependencies**: `@google/genai` (Google Generative AI SDK)
 > **Estimated Redis Impact**: ~2,500 commands/day (well within 10,000 free tier)
@@ -61,11 +61,11 @@ REV Media Group manages 30+ digital brands reaching 15 million Malaysians monthl
 
 | Task | Primary Model | Fallback | Reason |
 |------|--------------|----------|--------|
-| **Analyze** | Groq LLaMA 3.1 70B | Gemini Flash | Strong summarization + reasoning |
-| **Chat** | Groq LLaMA 3.1 70B | Gemini Flash | Fast + accurate Q&A |
-| **Translate** | Gemini Flash | Groq LLaMA 70B | Strong multilingual support |
-| **Digest** | Groq LLaMA 3.1 70B | Gemini Flash | Cost optimization |
-| **Suggest** | Groq LLaMA 3.1 70B | Gemini Flash | Creative headline generation |
+| **Analyze** | Groq LLaMA 3.3 70B | Gemini Flash | Strong summarization + reasoning |
+| **Chat** | Groq LLaMA 3.3 70B | Gemini Flash | Fast + accurate Q&A |
+| **Translate** | Groq LLaMA 3.3 70B | Gemini Flash | Higher rate limits + reliable JSON output |
+| **Digest** | Groq LLaMA 3.3 70B | Gemini Flash | Cost optimization |
+| **Suggest** | Groq LLaMA 3.3 70B | Gemini Flash | Creative headline generation |
 
 ### Routing Flow
 
@@ -96,7 +96,7 @@ API Route → AI Router
 ### Rate Limiting (Per-Provider)
 
 ```
-Groq Free Tier: 30 RPM, 14,400 RPD (LLaMA 3.1 70B)
+Groq Free Tier: 30 RPM, 14,400 RPD (LLaMA 3.3 70B)
 Our Self-Imposed: 25 RPM cap (safety margin)
 
 Gemini Free Tier: 10 RPM, 250 RPD (Gemini 2.5 Flash)
@@ -626,7 +626,7 @@ AI Rate Limiting     600    600    100     1,300  (2 providers)
 
 ## Portfolio Positioning Statement
 
-> "Implemented a provider-agnostic AI routing layer with task-based model selection (Groq LLaMA 3.1 70B + Gemini 2.5 Flash), automatic failover handling, and Redis-backed rate limiting to ensure high availability and cost efficiency across 5 AI endpoints serving 67+ articles."
+> "Implemented a provider-agnostic AI routing layer with task-based model selection (Groq LLaMA 3.3 70B + Gemini 2.5 Flash), automatic failover handling, and Redis-backed rate limiting to ensure high availability and cost efficiency across 5 AI endpoints serving 67+ articles."
 
 ---
 

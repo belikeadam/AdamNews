@@ -20,7 +20,7 @@ interface RouteConfig {
 const TASK_ROUTING: Record<AITask, RouteConfig> = {
   analyze:   { primary: 'groq',   fallback: 'gemini', reason: 'Strong summarization + reasoning' },
   chat:      { primary: 'groq',   fallback: 'gemini', reason: 'Fast + accurate Q&A' },
-  translate: { primary: 'gemini', fallback: 'groq',   reason: 'Strong multilingual support' },
+  translate: { primary: 'groq',   fallback: 'gemini', reason: 'Higher rate limits + reliable JSON output' },
   digest:    { primary: 'groq',   fallback: 'gemini', reason: 'Cost optimization' },
   suggest:   { primary: 'groq',   fallback: 'gemini', reason: 'Creative headline generation' },
 }
@@ -65,7 +65,8 @@ export async function callAICached<T>(
   cacheKey: string,
   prompt: string,
   ttlSeconds: number,
-  parseResponse: (text: string) => T
+  parseResponse: (text: string) => T,
+  options?: { temperature?: number; maxTokens?: number }
 ): Promise<{ data: T; cached: boolean; provider: Provider }> {
   const route = TASK_ROUTING[task]
 
@@ -84,7 +85,7 @@ export async function callAICached<T>(
   if (primaryRL.allowed) {
     try {
       const start = Date.now()
-      const text = await callProvider(route.primary, prompt)
+      const text = await callProvider(route.primary, prompt, options)
       const duration = Date.now() - start
       const data = parseResponse(text)
 
@@ -117,7 +118,7 @@ export async function callAICached<T>(
   }
 
   const start = Date.now()
-  const text = await callProvider(route.fallback, prompt)
+  const text = await callProvider(route.fallback, prompt, options)
   const duration = Date.now() - start
   const data = parseResponse(text)
 

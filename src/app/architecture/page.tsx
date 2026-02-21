@@ -55,7 +55,7 @@ const STACK = [
   },
   {
     layer: 'AI',
-    tech: 'Groq LLaMA 3.1 70B + Gemini Flash',
+    tech: 'Groq LLaMA 3.3 70B + Gemini Flash',
     detail: 'Multi-model router with task-based selection, auto-failover, and Redis caching',
     badge: 'RM 0 cost',
     badgeVariant: 'success' as const,

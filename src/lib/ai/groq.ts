@@ -2,7 +2,7 @@ import { redis } from '@/lib/redis'
 import { logger } from '@/lib/logger'
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
-const MODEL = 'llama-3.1-70b-versatile'
+const MODEL = 'llama-3.3-70b-versatile'
 const RATE_LIMIT_MAX = 25 // Self-imposed cap (Groq free tier allows 30 RPM)
 
 /**
@@ -22,7 +22,7 @@ export async function checkGroqRateLimit(): Promise<{ allowed: boolean; retryAft
 }
 
 /**
- * Call Groq LLaMA 3.1 70B (OpenAI-compatible API, no extra dependency).
+ * Call Groq LLaMA 3.3 70B (OpenAI-compatible API, no extra dependency).
  */
 export async function callGroq(
   prompt: string,

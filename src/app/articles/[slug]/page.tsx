@@ -240,8 +240,10 @@ export default async function ArticlePage({ params }: PageProps) {
         <AIArticleFeatures
           slug={slug}
           title={a.title}
-          body={typeof a.body === 'string' ? a.body.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 6000) : (a.excerpt || a.title)}
+          body={a.premium && !hasAccess ? '' : (typeof a.body === 'string' ? a.body.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 6000) : (a.excerpt || a.title))}
           categorySlug={categorySlug}
+          isPremium={!!a.premium}
+          hasAccess={hasAccess}
         />
 
         {/* Premium access banner for subscribers viewing premium content */}

@@ -206,7 +206,7 @@ This is where reviewers can see the full technical implementation.
 
 ### Step 9: AI Intelligence Features (Multi-Model: Groq + Gemini)
 
-Adam News includes a full AI intelligence layer powered by a **multi-model routing architecture** — Groq LLaMA 3.1 70B (primary for analysis, chat, digest, suggestions) and Google Gemini 2.5 Flash (primary for translation, fallback for all). Every feature is production-grade with Redis caching, per-provider rate limiting, automatic failover, and graceful error handling. Total cost: **RM 0** (dual free tiers).
+Adam News includes a full AI intelligence layer powered by a **multi-model routing architecture** — Groq LLaMA 3.3 70B (primary for all tasks) and Google Gemini 2.5 Flash (fallback). Every feature is production-grade with Redis caching, per-provider rate limiting, automatic failover, and graceful error handling. Total cost: **RM 0** (dual free tiers).
 
 #### 9.1: AI Article Intelligence Panel
 
@@ -364,7 +364,7 @@ Database:  PostgreSQL 16 (Railway)
 Cache:     Upstash Redis (cache-aside + rate limiting + AI cache)
 Payments:  Stripe Checkout (subscriptions + webhooks)
 Auth:      NextAuth v5 (JWT + OAuth + credentials)
-AI:        Groq LLaMA 3.1 70B + Gemini 2.5 Flash (multi-model router with failover)
+AI:        Groq LLaMA 3.3 70B + Gemini 2.5 Flash (multi-model router with failover)
 Audio:     Web Speech API (browser-native TTS, zero cost)
 Testing:   Vitest (41 unit tests) + Playwright (22 E2E tests), GitHub Actions CI
 DevOps:    Docker Compose (4 services), Vercel + Railway deploy

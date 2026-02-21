@@ -119,15 +119,84 @@ export async function callGeminiStream(prompt: string): Promise<ReadableStream<U
 }
 
 /**
- * Parse JSON from Gemini response text.
- * Handles markdown code fences and other formatting.
+ * Parse JSON from AI response text.
+ * Handles markdown code fences, truncated responses, and unescaped characters.
  */
 export function parseGeminiJSON<T>(text: string): T {
-  const cleaned = text
+  // Strip markdown code fences
+  let cleaned = text
     .replace(/```json\s*/g, '')
     .replace(/```\s*/g, '')
     .trim()
-  return JSON.parse(cleaned)
+
+  // Try direct parse first
+  try {
+    return JSON.parse(cleaned)
+  } catch {
+    // Continue to fallback strategies
+  }
+
+  // Strategy 2: Extract the first complete JSON object using brace matching
+  const jsonStart = cleaned.indexOf('{')
+  if (jsonStart !== -1) {
+    let depth = 0
+    let inString = false
+    let escape = false
+    let jsonEnd = -1
+
+    for (let i = jsonStart; i < cleaned.length; i++) {
+      const ch = cleaned[i]
+      if (escape) { escape = false; continue }
+      if (ch === '\\' && inString) { escape = true; continue }
+      if (ch === '"' && !escape) { inString = !inString; continue }
+      if (inString) continue
+      if (ch === '{') depth++
+      else if (ch === '}') { depth--; if (depth === 0) { jsonEnd = i; break } }
+    }
+
+    if (jsonEnd !== -1) {
+      try {
+        return JSON.parse(cleaned.slice(jsonStart, jsonEnd + 1))
+      } catch {
+        // Continue to next strategy
+      }
+    }
+  }
+
+  // Strategy 3: Fix truncated JSON (AI hit token limit)
+  // Add closing braces/brackets as needed
+  if (jsonStart !== -1) {
+    let partial = cleaned.slice(jsonStart)
+    // Close any open strings, arrays, objects
+    const openBraces = (partial.match(/{/g) || []).length
+    const closeBraces = (partial.match(/}/g) || []).length
+    const openBrackets = (partial.match(/\[/g) || []).length
+    const closeBrackets = (partial.match(/\]/g) || []).length
+
+    // Trim to last complete value (before any trailing incomplete string)
+    partial = partial.replace(/,\s*"[^"]*$/, '')  // remove trailing incomplete key-value
+    partial = partial.replace(/,\s*$/, '')         // remove trailing comma
+
+    // Close open structures
+    for (let i = 0; i < openBrackets - closeBrackets; i++) partial += ']'
+    for (let i = 0; i < openBraces - closeBraces; i++) partial += '}'
+
+    try {
+      return JSON.parse(partial)
+    } catch {
+      // Continue to final strategy
+    }
+  }
+
+  // Strategy 4: For translation-like responses, try regex extraction
+  const titleMatch = cleaned.match(/"title"\s*:\s*"((?:[^"\\]|\\.)*)"/)
+  const contentMatch = cleaned.match(/"content"\s*:\s*"((?:[^"\\]|\\.)*)"/)
+
+  if (titleMatch && contentMatch) {
+    return { title: titleMatch[1], content: contentMatch[1] } as T
+  }
+
+  throw new Error(`Failed to parse AI JSON response: ${cleaned.slice(0, 200)}`)
 }
 
 /** Custom error for rate limiting */

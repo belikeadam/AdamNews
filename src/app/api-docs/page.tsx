@@ -136,7 +136,7 @@ stripe trigger checkout.session.completed \\
   --webhook-endpoint="/api/stripe/webhook"`,
     tryUrl: null,
   },
-  // ── AI Intelligence Endpoints (Groq LLaMA 3.1 70B + Gemini 2.5 Flash) ──
+  // ── AI Intelligence Endpoints (Groq LLaMA 3.3 70B + Gemini 2.5 Flash) ──
   {
     id: 'ai-analyze',
     method: 'POST',
@@ -271,7 +271,7 @@ export default function ApiDocsPage() {
           API Reference
         </h1>
         <p className="text-sm sm:text-base text-[var(--muted)] mb-6">
-          Interactive documentation for The Adam News API — 14 endpoints including 5 AI-powered routes. Multi-model AI with Groq LLaMA 3.1 70B + Gemini 2.5 Flash, automatic failover, and Redis caching.
+          Interactive documentation for The Adam News API — 14 endpoints including 5 AI-powered routes. Multi-model AI with Groq LLaMA 3.3 70B + Gemini 2.5 Flash, automatic failover, and Redis caching.
         </p>
 
         {/* Mobile endpoint selector */}

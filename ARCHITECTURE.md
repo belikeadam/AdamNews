@@ -1137,17 +1137,17 @@ AdamNews/
 
 ### Overview
 
-Adam News includes a production-grade AI intelligence layer powered by a **multi-model routing architecture** using Groq LLaMA 3.1 70B (primary) and Google Gemini 2.5 Flash (fallback + translation). A provider-agnostic AI router selects the best model per task, with automatic failover and Redis caching. Total cost: **RM 0** (both free tiers).
+Adam News includes a production-grade AI intelligence layer powered by a **multi-model routing architecture** using Groq LLaMA 3.3 70B (primary) and Google Gemini 2.5 Flash (fallback). A provider-agnostic AI router selects the best model per task, with automatic failover and Redis caching. Total cost: **RM 0** (both free tiers).
 
 ### AI Features
 
 | Feature | Route | Primary Model | Cache TTL |
 |---------|-------|--------------|-----------|
-| **Article Intelligence** | `POST /api/ai/analyze` | Groq LLaMA 70B | 7 days |
-| **Translation** | `POST /api/ai/translate` | Gemini Flash | 30 days |
-| **Article Chat** | `POST /api/ai/chat` | Groq LLaMA 70B | 24 hours |
-| **Morning Digest** | `POST /api/ai/digest` | Groq LLaMA 70B | 6 hours |
-| **Editor Suggestions** | `POST /api/ai/suggest` | Groq LLaMA 70B | 7 days |
+| **Article Intelligence** | `POST /api/ai/analyze` | Groq LLaMA 3.3 | 7 days |
+| **Translation** | `POST /api/ai/translate` | Groq LLaMA 3.3 | 30 days |
+| **Article Chat** | `POST /api/ai/chat` | Groq LLaMA 3.3 | 24 hours |
+| **Morning Digest** | `POST /api/ai/digest` | Groq LLaMA 3.3 | 6 hours |
+| **Editor Suggestions** | `POST /api/ai/suggest` | Groq LLaMA 3.3 | 7 days |
 | **Audio Mode** | Client-side (Web Speech API) | Browser-native | N/A |
 
 ### Multi-Model Routing Architecture
@@ -1166,23 +1166,23 @@ API Route ────────► AI Router (src/lib/ai/router.ts)
 
 | Task | Primary | Fallback | Reason |
 |------|---------|----------|--------|
-| **Analyze** | Groq LLaMA 3.1 70B | Gemini Flash | Strong summarization + reasoning |
-| **Chat** | Groq LLaMA 3.1 70B | Gemini Flash | Fast + accurate Q&A |
-| **Translate** | Gemini Flash | Groq LLaMA 70B | Strong multilingual support |
-| **Digest** | Groq LLaMA 3.1 70B | Gemini Flash | Cost optimization |
-| **Suggest** | Groq LLaMA 3.1 70B | Gemini Flash | Creative headline generation |
+| **Analyze** | Groq LLaMA 3.3 70B | Gemini Flash | Strong summarization + reasoning |
+| **Chat** | Groq LLaMA 3.3 70B | Gemini Flash | Fast + accurate Q&A |
+| **Translate** | Groq LLaMA 3.3 70B | Gemini Flash | Higher rate limits + reliable JSON output |
+| **Digest** | Groq LLaMA 3.3 70B | Gemini Flash | Cost optimization |
+| **Suggest** | Groq LLaMA 3.3 70B | Gemini Flash | Creative headline generation |
 
 ### AI Architecture
 
 ```
 Article Page ─────► AIInsightsPanel
                     ├── Calls POST /api/ai/analyze
-                    ├── Router → Groq LLaMA 70B (fallback: Gemini)
+                    ├── Router → Groq LLaMA 3.3 (fallback: Gemini)
                     └── Cached in Redis (7 days per slug)
 
 Article Page ─────► LanguageToggle (BM ↔ EN)
                     ├── Calls POST /api/ai/translate
-                    ├── Router → Gemini Flash (fallback: Groq)
+                    ├── Router → Groq LLaMA 3.3 (fallback: Gemini)
                     └── Cached in Redis (30 days per slug+lang)
 
 Article Page ─────► AudioMode
@@ -1192,18 +1192,18 @@ Article Page ─────► AudioMode
 
 Article Page ─────► ArticleChat
                     ├── Calls POST /api/ai/chat
-                    ├── Router → Groq LLaMA 70B (fallback: Gemini)
+                    ├── Router → Groq LLaMA 3.3 (fallback: Gemini)
                     └── Cached in Redis (24h per slug+question)
 
 /digest Page ──────► Morning Digest
                     ├── Reads user interests from localStorage
                     ├── Fetches latest articles from Strapi
-                    ├── Router → Groq LLaMA 70B (fallback: Gemini)
+                    ├── Router → Groq LLaMA 3.3 (fallback: Gemini)
                     └── Shared cache by interest+date (6h)
 
 Dashboard ─────────► AI Editor Tools
                     ├── Calls POST /api/ai/suggest
-                    ├── Router → Groq LLaMA 70B (fallback: Gemini)
+                    ├── Router → Groq LLaMA 3.3 (fallback: Gemini)
                     └── Cached in Redis (7d per slug)
 ```
 

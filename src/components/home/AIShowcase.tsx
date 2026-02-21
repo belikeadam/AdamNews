@@ -53,7 +53,7 @@ export default function AIShowcase({ firstArticleSlug }: AIShowcaseProps) {
               AI
             </span>
             <span className="text-[0.6rem] font-bold text-[var(--muted)] uppercase tracking-[0.15em]">
-              Powered by Groq LLaMA + Gemini Flash
+              Powered by Groq LLaMA 3.3 + Gemini Flash
             </span>
           </div>
           <span className="flex-1" />
@@ -84,6 +84,15 @@ export default function AIShowcase({ firstArticleSlug }: AIShowcaseProps) {
               </ScrollStaggerItem>
             ))}
           </ScrollStagger>
+        </div>
+
+        <div className="px-5 py-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-[var(--border)]">
+          <span className="text-[0.6rem] text-[var(--muted)]">
+            AI features available on all free articles
+          </span>
+          <Link href="/plans" className="text-[0.6rem] font-semibold text-[var(--accent)] hover:underline">
+            Upgrade for premium article AI →
+          </Link>
         </div>
       </div>
     </ScrollReveal>

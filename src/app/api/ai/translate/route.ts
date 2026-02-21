@@ -29,12 +29,21 @@ export async function POST(request: Request) {
   try {
     const langName = targetLang === 'ms' ? 'Bahasa Malaysia' : 'English'
 
-    const prompt = `Translate this news article to ${langName}. Maintain professional journalistic tone. Respond ONLY with valid JSON (no markdown, no code fences):
+    // Strip any residual HTML and limit content to avoid token overflow
+    const cleanContent = content
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 3000)
 
-{"title": "translated title", "content": "translated article content (preserve paragraph structure with \\n\\n between paragraphs)"}
+    const prompt = `Translate this news article to ${langName}. Maintain professional journalistic tone.
+
+IMPORTANT: Respond with ONLY a JSON object. No markdown, no code fences, no explanation. Use \\n for newlines inside strings. Ensure all quotes inside strings are escaped with backslash.
+
+{"title": "translated title here", "content": "translated content here, use \\n\\n between paragraphs"}
 
 Title: ${title}
-Content: ${content.slice(0, 8000)}`
+Content: ${cleanContent}`
 
     const result = await callAICached<AITranslation>(
       'translate',
@@ -44,7 +53,8 @@ Content: ${content.slice(0, 8000)}`
       (text) => {
         const parsed = parseGeminiJSON<{ title: string; content: string }>(text)
         return { ...parsed, lang: targetLang }
-      }
+      },
+      { maxTokens: 4096 }
     )
 
     logger.request('POST', '/api/ai/translate', 200, Date.now() - start, {

@@ -68,7 +68,7 @@ export default function AIEditorTools() {
               <p className="text-xs text-[var(--muted)]">
                 Optimize headlines, SEO, and tags with AI
                 {cached && ' · Cached'}
-                {provider && !cached && ` · via ${provider === 'groq' ? 'Groq LLaMA 70B' : 'Gemini Flash'}`}
+                {provider && !cached && ` · via ${provider === 'groq' ? 'Groq LLaMA 3.3' : 'Gemini Flash'}`}
               </p>
             </div>
           </div>
@@ -182,7 +182,7 @@ export default function AIEditorTools() {
               Click &ldquo;Analyze Article&rdquo; to generate AI-powered suggestions for headlines, SEO, and tags.
             </p>
             <p className="text-[0.65rem] text-[var(--muted)]">
-              Routes to Groq LLaMA 70B (primary) with Gemini Flash fallback
+              Routes to Groq LLaMA 3.3 (primary) with Gemini Flash fallback
             </p>
           </div>
         )}

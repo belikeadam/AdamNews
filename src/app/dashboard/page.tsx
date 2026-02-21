@@ -214,11 +214,11 @@ export default function DashboardOverview() {
         <CardContent>
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
             {[
-              { task: 'Analyze', model: 'Groq LLaMA 70B', fallback: 'Gemini Flash' },
-              { task: 'Chat', model: 'Groq LLaMA 70B', fallback: 'Gemini Flash' },
-              { task: 'Translate', model: 'Gemini Flash', fallback: 'Groq LLaMA 70B' },
-              { task: 'Digest', model: 'Groq LLaMA 70B', fallback: 'Gemini Flash' },
-              { task: 'Suggest', model: 'Groq LLaMA 70B', fallback: 'Gemini Flash' },
+              { task: 'Analyze', model: 'Groq LLaMA 3.3', fallback: 'Gemini Flash' },
+              { task: 'Chat', model: 'Groq LLaMA 3.3', fallback: 'Gemini Flash' },
+              { task: 'Translate', model: 'Groq LLaMA 3.3', fallback: 'Gemini Flash' },
+              { task: 'Digest', model: 'Groq LLaMA 3.3', fallback: 'Gemini Flash' },
+              { task: 'Suggest', model: 'Groq LLaMA 3.3', fallback: 'Gemini Flash' },
             ].map((r) => (
               <div key={r.task} className="p-3 rounded-lg bg-[var(--surface)] border border-[var(--border)]">
                 <div className="text-[0.6rem] font-bold text-[var(--muted)] uppercase tracking-wide">{r.task}</div>
