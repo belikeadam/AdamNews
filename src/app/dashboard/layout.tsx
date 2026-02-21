@@ -1,4 +1,5 @@
 import Sidebar from '@/components/layout/Sidebar'
+import DashboardMobileNav from '@/components/layout/DashboardMobileNav'
 import TechBar from '@/components/layout/TechBar'
 import DemoBanner from '@/components/shared/DemoBanner'
 
@@ -18,6 +19,7 @@ export default function DashboardLayout({
         ]}
       />
       <DemoBanner />
+      <DashboardMobileNav />
       <div className="flex flex-1">
         <Sidebar />
         <div className="flex-1 p-4 md:p-6 overflow-auto">{children}</div>

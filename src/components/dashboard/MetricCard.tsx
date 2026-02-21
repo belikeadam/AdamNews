@@ -22,7 +22,7 @@ export default function MetricCard({
         <p className="text-sm text-[var(--muted)] mb-1">{title}</p>
         <div className="flex items-end justify-between">
           <div>
-            <p className="text-2xl font-bold text-[var(--text)]">{value}</p>
+            <p className="text-xl sm:text-2xl font-bold text-[var(--text)] truncate">{value}</p>
             {change && (
               <p
                 className={cn('text-xs font-medium mt-1', {
