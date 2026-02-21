@@ -414,45 +414,44 @@ export default function Navbar({ categories }: NavbarProps) {
                       <NavIcon name="star" size={15} />
                       Plans & Pricing
                     </Link>
-                    {/* Admin-only developer tools */}
+                    {/* Developer tools — visible to all users (matches desktop nav) */}
+                    <Link
+                      href="/api-docs"
+                      onClick={closeDrawer}
+                      className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm transition-all ${
+                        pathname === '/api-docs'
+                          ? 'bg-[var(--accent-light)] text-[var(--accent)] font-medium'
+                          : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)]'
+                      }`}
+                    >
+                      <NavIcon name="code" size={15} />
+                      API Docs
+                    </Link>
+                    <Link
+                      href="/architecture"
+                      onClick={closeDrawer}
+                      className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm transition-all ${
+                        pathname === '/architecture'
+                          ? 'bg-[var(--accent-light)] text-[var(--accent)] font-medium'
+                          : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)]'
+                      }`}
+                    >
+                      <NavIcon name="dashboard" size={15} />
+                      Architecture
+                    </Link>
+                    {/* Admin-only CMS link */}
                     {isAdmin && (
-                      <>
-                        <Link
-                          href="/api-docs"
-                          onClick={closeDrawer}
-                          className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm transition-all ${
-                            pathname === '/api-docs'
-                              ? 'bg-[var(--accent-light)] text-[var(--accent)] font-medium'
-                              : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)]'
-                          }`}
-                        >
-                          <NavIcon name="code" size={15} />
-                          API Docs
-                        </Link>
-                        <Link
-                          href="/architecture"
-                          onClick={closeDrawer}
-                          className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm transition-all ${
-                            pathname === '/architecture'
-                              ? 'bg-[var(--accent-light)] text-[var(--accent)] font-medium'
-                              : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)]'
-                          }`}
-                        >
-                          <NavIcon name="dashboard" size={15} />
-                          Architecture
-                        </Link>
-                        <a
-                          href={`${process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'}/admin`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={closeDrawer}
-                          className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-all"
-                        >
-                          <NavIcon name="dashboard" size={15} />
-                          <span className="flex-1">CMS Admin</span>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-40"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                        </a>
-                      </>
+                      <a
+                        href={`${process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'}/admin`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={closeDrawer}
+                        className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-all"
+                      >
+                        <NavIcon name="dashboard" size={15} />
+                        <span className="flex-1">CMS Admin</span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-40"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                      </a>
                     )}
                   </nav>
                 </div>

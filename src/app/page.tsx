@@ -55,7 +55,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         </section>
       )}
 
-      <div className="max-w-7xl mx-auto px-4 py-4 sm:py-6 pb-8">
+      <div className="max-w-7xl mx-auto px-4 py-4 sm:py-6 pb-8 overflow-x-hidden">
         <HomeClient
           articles={gridArticles}
           trending={trending.data}

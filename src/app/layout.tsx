@@ -52,7 +52,7 @@ export default async function RootLayout({
           <Suspense>
             <Navbar categories={categories} />
           </Suspense>
-          <main className="flex-1">{children}</main>
+          <main className="flex-1 overflow-x-hidden w-full">{children}</main>
           <Footer />
           <ScrollToTop />
         </Providers>

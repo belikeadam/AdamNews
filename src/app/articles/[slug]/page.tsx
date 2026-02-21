@@ -146,7 +146,7 @@ export default async function ArticlePage({ params }: PageProps) {
         <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg)] via-transparent to-transparent" />
       </div>
 
-      <article className="max-w-3xl mx-auto px-4 pb-8 relative -mt-6 sm:-mt-12 z-10">
+      <article className="max-w-3xl mx-auto px-4 pb-8 relative -mt-6 sm:-mt-12 z-10 overflow-x-hidden">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-[var(--muted)] mb-3 sm:mb-6">
           <Link href="/" className="hover:text-[var(--text)] transition-colors flex-shrink-0">
