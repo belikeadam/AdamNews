@@ -6,6 +6,7 @@ import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import MobileNav from '@/components/layout/MobileNav'
 import ScrollToTop from '@/components/shared/ScrollToTop'
+import DemoBanner from '@/components/shared/DemoBanner'
 import { DEFAULT_META } from '@/constants/meta'
 import { getCategories } from '@/lib/api/strapi'
 import './globals.css'
@@ -48,6 +49,7 @@ export default async function RootLayout({
     <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
       <body className="min-h-screen flex flex-col bg-[var(--bg)] text-[var(--text)] font-sans antialiased">
         <Providers>
+          <DemoBanner />
           <Suspense>
             <Navbar categories={categories} />
           </Suspense>

@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import LoginStepper from '@/components/auth/LoginStepper'
 import OAuthButton from '@/components/auth/OAuthButton'
-import DemoBanner from '@/components/shared/DemoBanner'
+import DemoLoginButtons from '@/components/auth/DemoLoginButtons'
 import { SITE_NAME } from '@/constants/meta'
 
 export const metadata: Metadata = {
@@ -12,8 +12,6 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <>
-    <DemoBanner />
     <div className="min-h-[calc(100vh-4rem)] flex">
       {/* Left brand panel — desktop only */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[var(--accent)] to-blue-700 relative overflow-hidden">
@@ -55,10 +53,19 @@ export default function LoginPage() {
             </p>
           </div>
 
+          {/* One-click demo login — top of page for reviewers */}
+          <DemoLoginButtons />
+
+          {/* Divider */}
+          <div className="flex items-center gap-4 my-6">
+            <div className="flex-1 h-px bg-[var(--border)]" />
+            <span className="text-sm text-[var(--muted)]">or sign in manually</span>
+            <div className="flex-1 h-px bg-[var(--border)]" />
+          </div>
+
           {/* Google OAuth */}
           <OAuthButton />
 
-          {/* Divider */}
           <div className="flex items-center gap-4 my-6">
             <div className="flex-1 h-px bg-[var(--border)]" />
             <span className="text-sm text-[var(--muted)]">or</span>
@@ -78,6 +85,5 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
-    </>
   )
 }
