@@ -136,6 +136,87 @@ stripe trigger checkout.session.completed \\
   --webhook-endpoint="/api/stripe/webhook"`,
     tryUrl: null,
   },
+  // ── AI Intelligence Endpoints (Gemini 2.5 Flash) ──
+  {
+    id: 'ai-analyze',
+    method: 'POST',
+    path: '/api/ai/analyze',
+    description: 'AI-powered article analysis. Returns TL;DR summary, key takeaways, sentiment, fact-check score, reading level, entities, and topics. Results cached in Redis for 30 days.',
+    auth: 'Public',
+    params: [
+      { name: 'title', type: 'string', required: true, description: 'Article title' },
+      { name: 'content', type: 'string', required: true, description: 'Article body (HTML or plain text)' },
+      { name: 'slug', type: 'string', required: true, description: 'Article slug (used as cache key)' },
+    ],
+    curl: `curl -X POST "/api/ai/analyze" \\
+  -H "Content-Type: application/json" \\
+  -d '{"title":"Article Title","content":"<p>Article body...</p>","slug":"my-article"}'`,
+    tryUrl: null,
+  },
+  {
+    id: 'ai-translate',
+    method: 'POST',
+    path: '/api/ai/translate',
+    description: 'Translate article content between English and Bahasa Malaysia using Gemini. Translates both title and body. Cached in Redis for 30 days.',
+    auth: 'Public',
+    params: [
+      { name: 'title', type: 'string', required: true, description: 'Article title to translate' },
+      { name: 'content', type: 'string', required: true, description: 'Article body to translate' },
+      { name: 'slug', type: 'string', required: true, description: 'Article slug (cache key)' },
+      { name: 'targetLang', type: 'string', required: true, description: 'Target language: "ms" (Malay) or "en" (English)' },
+    ],
+    curl: `curl -X POST "/api/ai/translate" \\
+  -H "Content-Type: application/json" \\
+  -d '{"title":"Hello World","content":"<p>Article body</p>","slug":"my-article","targetLang":"ms"}'`,
+    tryUrl: null,
+  },
+  {
+    id: 'ai-chat',
+    method: 'POST',
+    path: '/api/ai/chat',
+    description: 'Ask questions about a specific article. AI responses are grounded to article content only — no hallucination. Streams response via ReadableStream.',
+    auth: 'Public',
+    params: [
+      { name: 'question', type: 'string', required: true, description: 'User question about the article' },
+      { name: 'content', type: 'string', required: true, description: 'Article body for grounding' },
+      { name: 'title', type: 'string', required: true, description: 'Article title for context' },
+    ],
+    curl: `curl -X POST "/api/ai/chat" \\
+  -H "Content-Type: application/json" \\
+  -d '{"question":"What is the main point?","content":"<p>Article body</p>","title":"Article Title"}'`,
+    tryUrl: null,
+  },
+  {
+    id: 'ai-digest',
+    method: 'POST',
+    path: '/api/ai/digest',
+    description: 'Generate a personalized AI morning digest based on reader interests and recent articles. Cached by interest profile for 7 days.',
+    auth: 'Public',
+    params: [
+      { name: 'interests', type: 'string[]', required: true, description: 'Array of reader interest categories' },
+      { name: 'articles', type: 'object[]', required: true, description: 'Array of recent articles with title, excerpt, category, slug' },
+    ],
+    curl: `curl -X POST "/api/ai/digest" \\
+  -H "Content-Type: application/json" \\
+  -d '{"interests":["technology","science"],"articles":[{"title":"...","excerpt":"...","category":"tech","slug":"..."}]}'`,
+    tryUrl: null,
+  },
+  {
+    id: 'ai-suggest',
+    method: 'POST',
+    path: '/api/ai/suggest',
+    description: 'AI editor tools for article optimization. Returns alternative headlines with engagement scores, SEO suggestions, auto-generated tags, and excerpt suggestion. For editorial dashboards.',
+    auth: 'Public',
+    params: [
+      { name: 'title', type: 'string', required: true, description: 'Current article headline' },
+      { name: 'content', type: 'string', required: true, description: 'Article body content' },
+      { name: 'slug', type: 'string', required: true, description: 'Article slug (cache key)' },
+    ],
+    curl: `curl -X POST "/api/ai/suggest" \\
+  -H "Content-Type: application/json" \\
+  -d '{"title":"Original Headline","content":"<p>Article body</p>","slug":"my-article"}'`,
+    tryUrl: null,
+  },
 ]
 
 const METHOD_COLORS = {
@@ -190,7 +271,7 @@ export default function ApiDocsPage() {
           API Reference
         </h1>
         <p className="text-sm sm:text-base text-[var(--muted)] mb-6">
-          Interactive documentation for The Adam News API. Powered by Strapi CMS and Next.js.
+          Interactive documentation for The Adam News API — 14 endpoints including 5 AI-powered routes. Powered by Strapi CMS, Next.js, and Google Gemini.
         </p>
 
         {/* Mobile endpoint selector */}
@@ -352,10 +433,10 @@ export default function ApiDocsPage() {
         </div>
 
         <ArchCallout
-          apiCall="Strapi REST API + Next.js API Routes"
-          caching="GET endpoints: Redis cache-aside. Mutations: no cache."
-          auth="Public (read), Bearer token (write), Webhook secret (revalidate)"
-          rationale="API Docs page is SSG — built once at deploy. Live playground makes real HTTP requests."
+          apiCall="Strapi REST API + Next.js API Routes + Gemini AI Routes"
+          caching="GET endpoints: Redis cache-aside. AI endpoints: Redis cache (7-30 day TTL). Mutations: no cache."
+          auth="Public (read + AI), Bearer token (write), Webhook secret (revalidate), Stripe signature (webhooks)"
+          rationale="API Docs page is SSG — built once at deploy. Live playground makes real HTTP requests. AI routes include self-imposed rate limiting (8 req/min)."
           className="mt-8"
         />
       </div>

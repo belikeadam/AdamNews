@@ -31,6 +31,7 @@
 18. [Security](#18-security)
 19. [Business Features](#19-business-features)
 20. [Known Limitations & Production Roadmap](#20-known-limitations--production-roadmap)
+21. [AI Intelligence Layer](#21-ai-intelligence-layer)
 
 ---
 
@@ -51,7 +52,8 @@ The Adam News is a full-stack digital newspaper platform that demonstrates end-t
 | **Database / CMS** | Strapi v4 with PostgreSQL, structured content types, media handling |
 | **Caching** | Redis (Upstash), ISR tag-based revalidation, cache-aside pattern |
 | **DevOps** | Docker Compose (4 services), GitHub Actions CI, Vercel + Railway deploy |
-| **Testing** | Vitest with 41 tests covering utils, API routes, and rendering |
+| **AI Intelligence** | Google Gemini 2.5 Flash — article analysis, translation, chat, digest, editor tools |
+| **Testing** | Vitest (41 unit tests) + Playwright (22 E2E tests) covering utils, API routes, rendering, and AI features |
 | **SEO** | Dynamic sitemap, robots.txt, OpenGraph, Twitter Cards, JSON-LD schema |
 | **Design** | Tailwind CSS v4, dark mode, responsive, editorial typography (Playfair Display) |
 
@@ -60,9 +62,10 @@ The Adam News is a full-stack digital newspaper platform that demonstrates end-t
 - **67 articles** seeded with real tech news content (via Dev.to API)
 - **6 categories** (Technology, Business, Finance, Lifestyle, Science, General)
 - **40+ authors** with profiles and avatars
-- **41 tests** passing across 3 test suites
+- **63 tests** passing (41 unit tests + 22 E2E tests) across 4 test suites
 - **73+ URLs** in sitemap (6 static + 67 dynamic)
-- **9 API routes** (4 GET, 5 POST) — including health check endpoint
+- **14 API routes** (4 GET, 10 POST) — including 5 AI endpoints and health check
+- **6 AI features** powered by Google Gemini 2.5 Flash (free tier, RM 0 cost)
 - **3 subscription plans** (Free, Standard RM9.99/mo, Premium RM19.99/mo)
 - **Rate limiting** on all API routes via Upstash Redis (token bucket)
 - **Input validation** on all API routes via Zod schemas
@@ -79,7 +82,12 @@ The Adam News is a full-stack digital newspaper platform that demonstrates end-t
 │  Next.js App (React 19)     ◄───── Tailwind CSS v4              │
 │  ├── Server Components (ISR)       Dark mode, CSS variables      │
 │  ├── Client Components (CSR)       Playfair Display + Inter      │
-│  └── Static Pages (SSG)                                          │
+│  ├── Static Pages (SSG)                                          │
+│  └── AI Components:                                              │
+│      ├── AIInsightsPanel (article intelligence)                  │
+│      ├── LanguageToggle (BM ↔ EN translation)                   │
+│      ├── AudioMode (Web Speech API TTS)                          │
+│      └── ArticleChat (ask article questions)                     │
 └──────────┬──────────────────────────────────────────┬────────────┘
            │ fetch / API calls                        │ Stripe.js
            ▼                                          ▼
@@ -88,7 +96,15 @@ The Adam News is a full-stack digital newspaper platform that demonstrates end-t
 │   ├── SSR runtime   │               │    ├── Checkout Sessions │
 │   ├── API routes    │               │    ├── Subscriptions     │
 │   ├── ISR cache     │               │    └── Webhooks          │
-│   └── Static assets │               └──────────────────────────┘
+│   ├── Static assets │               └──────────────────────────┘
+│   └── AI API routes │
+│       ├── /api/ai/analyze           ┌──────────────────────────┐
+│       ├── /api/ai/translate         │   Google Gemini API      │
+│       ├── /api/ai/chat      ◄──────►│   (Free Tier)            │
+│       ├── /api/ai/digest            │   ├── gemini-2.5-flash   │
+│       └── /api/ai/suggest           │   ├── 10 RPM, 250 RPD   │
+│                                     │   └── Structured JSON    │
+│                                     └──────────────────────────┘
 └──────────┬──────────┘
            │ REST API
            ▼
@@ -96,9 +112,9 @@ The Adam News is a full-stack digital newspaper platform that demonstrates end-t
 │   Strapi v4         │       │   Upstash Redis      │
 │   (Railway)         │       │   (Serverless)       │
 │   ├── Articles      │       │   ├── Cache-aside    │
-│   ├── Categories    │       │   └── TTL-based      │
-│   ├── Authors       │       └──────────────────────┘
-│   ├── Media uploads │
+│   ├── Categories    │       │   ├── TTL-based      │
+│   ├── Authors       │       │   └── AI cache keys  │
+│   ├── Media uploads │       └──────────────────────┘
 │   └── Webhooks ─────┼──► POST /api/revalidate ──► ISR invalidation
 └──────────┬──────────┘
            │
@@ -148,6 +164,9 @@ The Adam News is a full-stack digital newspaper platform that demonstrates end-t
 | **NextAuth** | 5.0.0-beta.30 | Authentication — JWT, OAuth, credentials |
 | **Stripe** | 20.3.1 | Payment processing — subscriptions, webhooks |
 | **Upstash Redis** | 1.36.2 | Serverless Redis — API caching, rate limiting |
+| **Google Gemini** | 2.5 Flash | AI content analysis, translation, chat, digest, editor tools |
+| **@google/genai** | latest | Official Google Generative AI SDK |
+| **Web Speech API** | Browser-native | Text-to-speech for audio mode (zero cost) |
 
 ### Development & Testing
 
@@ -495,6 +514,12 @@ On Redis failure: **fail-open** (allows request through). Rate limit headers inc
 | `article:{slug}` | 60s | Single article |
 | `categories` | 3600s | Category list |
 | `articles:trending` | 60s | Trending articles |
+| `ai:analysis:{slug}` | 604,800s (7d) | AI article intelligence JSON |
+| `ai:translate:{slug}:{lang}` | 2,592,000s (30d) | Translated title + content |
+| `ai:chat:{slug}:{questionHash}` | 86,400s (24h) | Chat response |
+| `ai:digest:{categories}:{dateHour}` | 21,600s (6h) | Shared morning digest |
+| `ai:suggest:{slug}` | 604,800s (7d) | Editor suggestions |
+| `rl:gemini:{minute}` | 65s | Gemini rate limit counter |
 
 ### ISR Revalidation Triggers
 
@@ -536,6 +561,11 @@ These are Strapi REST endpoints exposed through the CMS:
 | `POST` | `/api/analytics` | Public | Track scroll depth and read time |
 | `GET` | `/api/health` | Public | System health check (Strapi + Redis status) |
 | `GET/POST` | `/api/auth/[...nextauth]` | NextAuth | Authentication endpoints (CSRF, session, callback, signout) |
+| `POST` | `/api/ai/analyze` | Public (rate-limited) | AI article analysis — summary, sentiment, entities, fact-check |
+| `POST` | `/api/ai/translate` | Public (rate-limited) | Translate article between English and Bahasa Malaysia |
+| `POST` | `/api/ai/chat` | Public (rate-limited) | Ask questions about an article (grounded, no hallucination) |
+| `POST` | `/api/ai/digest` | Public (rate-limited) | Generate personalized morning digest from reading interests |
+| `POST` | `/api/ai/suggest` | Public (rate-limited) | AI editor tools — headline alternatives, SEO tips, auto-tags |
 
 **All POST routes** include:
 - **Rate limiting** via Upstash Redis (token bucket algorithm, fail-open)
@@ -619,6 +649,7 @@ type ArticlesResponse = StrapiCollectionResponse<ArticleAttributes>
 | `/dashboard/posts/[id]/edit` | CSR (admin) | Strapi REST (article by ID) | Rich text editor, save → revalidate |
 | `/dashboard/analytics` | CSR (admin) | Demo data | Traffic sources, geography |
 | `/dashboard/subscribers` | CSR (admin) | Demo data | Subscriber table, CSV export |
+| `/digest` | CSR | Strapi + Gemini + localStorage | AI-generated personalized daily briefing based on reading interests |
 | `/api-docs` | SSG + CSR | Live Strapi API (playground) | Interactive "Try it" with latency |
 | `/architecture` | SSG | Static data | This architecture overview |
 | `/contact` | SSG | None | Contact form (stub) |
@@ -660,6 +691,11 @@ type ArticlesResponse = StrapiCollectionResponse<ArticleAttributes>
 | `ReadingProgress` | Fixed top progress bar — width = scroll percentage |
 | `AuthorBio` | Author card with name, role, bio, avatar |
 | `PaywallGate` | Upgrade prompt when free user hits premium article |
+| `AIInsightsPanel` | Expandable panel showing AI article intelligence (summary, sentiment, entities, fact-check). Powered by Gemini with Redis caching. |
+| `LanguageToggle` | BM ↔ EN toggle that translates article content via Gemini. Cached for 30 days. |
+| `AudioMode` | Text-to-speech reader using Web Speech API. Supports English and Malay voices. Zero API cost. |
+| `ArticleChat` | Compact chat widget for asking questions about the current article. Grounded responses (no hallucination). |
+| `AIArticleFeatures` | Client wrapper component that composes all AI features on the article page. |
 
 ### Auth Components (`src/components/auth/`)
 
@@ -677,6 +713,7 @@ type ArticlesResponse = StrapiCollectionResponse<ArticleAttributes>
 | `Editor` | Rich text editor for article creation/editing |
 | `MetricCard` | KPI card with trend indicator and sparkline |
 | `PostsTable` | Article management table with status badges |
+| `AIEditorTools` | AI-powered editor assistant — headline alternatives, SEO suggestions, auto-tags. Powered by Gemini. |
 
 ### UI Design System (`src/components/ui/`)
 
@@ -759,7 +796,7 @@ type ArticlesResponse = StrapiCollectionResponse<ArticleAttributes>
 - **@testing-library/react** 16.3.2 — React component testing
 - **@testing-library/jest-dom** 6.9.1 — DOM matchers
 
-### Test Suites (41 tests total)
+### Test Suites (63 tests total: 41 unit + 22 E2E)
 
 **`src/__tests__/utils.test.ts`** — 26 tests
 - `cn()` — class merging, conditional classes, Tailwind conflict resolution
@@ -792,11 +829,25 @@ Uses `vi.resetModules()` + dynamic import to handle module-level constant cachin
 - Horizontal rules
 - HTML entity escaping in code blocks
 
+**`e2e/ai-features.spec.ts`** — 22 tests (11 scenarios x 2 browsers: Desktop Chrome + Mobile Chrome)
+
+E2E tests powered by Playwright covering all AI features:
+- Article page AI Intelligence panel (expand, loading, cached state)
+- Language toggle (EN/BM buttons visible, translation)
+- Audio Mode (listen button, waveform)
+- Article Chat widget (suggested questions)
+- AI API endpoints (analyze, translate, chat, suggest — valid responses)
+- Zod validation (empty body returns 400)
+- Digest page (loads briefing or "read articles first" state)
+- Dashboard AI Editor Tools (heading visible, analyze button)
+
 ### Running Tests
 
 ```bash
-npm test           # Single run (CI)
-npm run test:watch # Watch mode (development)
+npm test                    # Unit tests (Vitest, single run)
+npm run test:watch          # Unit tests (Vitest, watch mode)
+npx playwright test         # E2E tests (all specs)
+npx playwright test e2e/ai-features.spec.ts  # AI E2E tests only
 ```
 
 ---
@@ -877,6 +928,7 @@ Hot reload enabled for Next.js via volume mounts.
 | `STRIPE_PREMIUM_PRICE_ID` | Stripe price ID for Premium plan |
 | `UPSTASH_REDIS_REST_URL` | Upstash Redis REST endpoint |
 | `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis authentication token |
+| `GEMINI_API_KEY` | Google Gemini API key for AI features (free at https://aistudio.google.com) |
 
 ### Optional
 
@@ -929,13 +981,18 @@ AdamNews/
 │   │       ├── articles/[slug]/views/route.ts  # View counter
 │   │       ├── stripe/checkout/route.ts        # Stripe Checkout
 │   │       ├── stripe/webhook/route.ts         # Stripe lifecycle
+│   │       ├── ai/analyze/route.ts              # AI article analysis
+│   │       ├── ai/translate/route.ts            # AI translation (EN ↔ BM)
+│   │       ├── ai/chat/route.ts                 # AI article Q&A
+│   │       ├── ai/digest/route.ts               # AI morning digest
+│   │       ├── ai/suggest/route.ts              # AI editor tools
 │   │       └── auth/[...nextauth]/route.ts     # NextAuth handler
 │   ├── components/
 │   │   ├── layout/                   # Navbar, Footer, MobileNav, Sidebar, TechBar
 │   │   ├── reader/                   # HeroCarousel, ArticleCard, CategoryFilter
-│   │   ├── article/                  # ArticleBody, Analytics, Toolbar, PaywallGate
+│   │   ├── article/                  # ArticleBody, Analytics, Toolbar, PaywallGate, AI features
 │   │   ├── auth/                     # DemoLoginButtons, LoginStepper, OAuthButton
-│   │   ├── dashboard/               # Chart, Editor, MetricCard, PostsTable
+│   │   ├── dashboard/               # Chart, Editor, MetricCard, PostsTable, AIEditorTools
 │   │   ├── shared/                   # DemoBanner, ArchCallout, ScrollToTop, Toast
 │   │   └── ui/                       # Badge, Button, Card, Input, Modal, Skeleton
 │   ├── lib/
@@ -944,11 +1001,13 @@ AdamNews/
 │   │   ├── api/graphql.ts           # Strapi GraphQL client (alternative)
 │   │   ├── auth.ts                  # NextAuth config + demo users
 │   │   ├── redis.ts                 # Upstash Redis cache-aside
+│   │   ├── ai/gemini.ts            # Gemini client, rate limiter, cache-aside, JSON parser
 │   │   └── utils.ts                 # cn, formatDate, readTime, slugify, relativeTime, etc.
 │   ├── hooks/
 │   │   ├── useAuth.ts               # Auth state (isAuthenticated, isAdmin, plan)
 │   │   ├── useMediaQuery.ts         # Responsive breakpoints
-│   │   └── useToast.ts              # Toast notification system
+│   │   ├── useToast.ts              # Toast notification system
+│   │   └── usePersonalization.ts    # Reading behavior tracking (localStorage)
 │   ├── constants/
 │   │   ├── meta.ts                  # Site name, description, default SEO metadata
 │   │   ├── plans.ts                 # Subscription plan definitions
@@ -957,6 +1016,7 @@ AdamNews/
 │   ├── types/
 │   │   ├── strapi.ts                # Strapi response types (generic wrappers + content types)
 │   │   ├── auth.ts                  # UserRole, UserPlan, NextAuth module augmentation
+│   │   ├── ai.ts                    # AI feature type definitions
 │   │   └── index.ts                 # Re-exports
 │   ├── __tests__/
 │   │   ├── setup.ts                 # Test setup (@testing-library/jest-dom)
@@ -1070,6 +1130,92 @@ AdamNews/
 8. **A/B testing** — Headline testing, layout experiments
 9. ~~**Rate limiting**~~ — ✅ Implemented (token bucket via Upstash Redis on all API routes)
 10. ~~**Monitoring**~~ — ✅ Implemented (structured JSON logging + `/api/health` endpoint; Sentry/PostHog can be added)
+
+---
+
+## 21. AI Intelligence Layer
+
+### Overview
+
+Adam News includes a production-grade AI intelligence layer powered by Google Gemini 2.5 Flash. This layer provides real-time content analysis, multilingual translation, conversational Q&A, personalized digests, and editorial AI tools — all running entirely on free tier with aggressive Redis caching. Total cost: **RM 0**.
+
+### AI Features
+
+| Feature | Route | What It Does | Cache TTL |
+|---------|-------|-------------|-----------|
+| **Article Intelligence** | `POST /api/ai/analyze` | TL;DR, key takeaways, sentiment, fact-check, entities, topics | 7 days |
+| **Translation** | `POST /api/ai/translate` | Translates articles between English and Bahasa Malaysia | 30 days |
+| **Article Chat** | `POST /api/ai/chat` | Answers questions using only article content (grounded, no hallucination) | 24 hours |
+| **Morning Digest** | `POST /api/ai/digest` | Personalized daily briefing based on reading interests | 6 hours |
+| **Editor Suggestions** | `POST /api/ai/suggest` | Headline alternatives with scores, SEO tips, auto-tags | 7 days |
+| **Audio Mode** | Client-side | Reads articles aloud using Web Speech API (EN or BM voice) | N/A (browser) |
+
+### AI Architecture
+
+```
+Article Page ─────► AIInsightsPanel
+                    ├── Calls POST /api/ai/analyze
+                    ├── Returns structured JSON (summary, sentiment, entities)
+                    └── Cached in Redis (7 days per slug)
+
+Article Page ─────► LanguageToggle (BM ↔ EN)
+                    ├── Calls POST /api/ai/translate
+                    ├── Swaps title + body content
+                    └── Cached in Redis (30 days per slug+lang)
+
+Article Page ─────► AudioMode
+                    ├── Uses browser SpeechSynthesis API
+                    ├── Supports en-GB and ms-MY voices
+                    └── Zero API cost
+
+Article Page ─────► ArticleChat
+                    ├── Calls POST /api/ai/chat
+                    ├── Gemini answers from article content only
+                    └── Cached in Redis (24h per slug+question)
+
+/digest Page ──────► Morning Digest
+                    ├── Reads user interests from localStorage
+                    ├── Fetches latest articles from Strapi
+                    ├── Calls POST /api/ai/digest
+                    └── Shared cache by interest+date (6h)
+
+Dashboard ─────────► AI Editor Tools
+                    ├── Calls POST /api/ai/suggest
+                    ├── Returns headlines, SEO tips, tags
+                    └── Cached in Redis (7d per slug)
+```
+
+### Gemini Client (`src/lib/ai/gemini.ts`)
+
+Centralized Gemini client with:
+
+1. **Shared instance** — single `GoogleGenAI` client reused across all routes
+2. **Rate limiter** — self-imposed 8 req/min cap (Gemini free tier allows 10)
+3. **Cache-aside** — checks Redis before calling Gemini, stores result after
+4. **Structured output** — Gemini JSON response mode for type-safe results
+5. **Error handling** — graceful fallback on API errors (never crashes the page)
+
+### AI Rate Limiting
+
+| Limit | Value | Enforcement |
+|-------|-------|-------------|
+| Gemini RPM (self-imposed) | 8 req/min | Redis counter per minute window |
+| Gemini RPD (free tier) | 250 req/day | Aggressive caching reduces to ~50-80 actual calls/day |
+| Per-IP analyze | 20 req/min | Token bucket per IP |
+| Per-IP chat | 15 req/min | Token bucket per IP |
+| Per-IP translate | 10 req/min | Token bucket per IP |
+| Per-IP digest | 5 req/min | Token bucket per IP |
+| Chat questions/session | 5 per article | Client-side enforcement |
+| On rate limit exceeded | 429 + retry-after | Client auto-retries with countdown |
+
+### Cost Analysis
+
+| Resource | Free Tier Limit | Our Daily Usage | Safety Margin |
+|----------|----------------|-----------------|---------------|
+| Gemini API calls | 250 RPD | ~50-80 (after caching) | 68-80% under |
+| Gemini RPM | 10 RPM | 8 RPM (self-imposed cap) | 20% under |
+| Redis commands | 10,000/day | ~4,335 (all features) | 57% under |
+| Web Speech API | Unlimited | Browser-native | Infinite |
 
 ---
 

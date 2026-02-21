@@ -5,6 +5,7 @@ export const NAV_ITEMS = [
   { label: 'Science', href: '/?category=science' },
   { label: 'General', href: '/?category=general' },
   { label: 'Search', href: '/search' },
+  { label: 'AI Digest', href: '/digest' },
   { label: 'Plans', href: '/plans' },
   { label: 'API Docs', href: '/api-docs' },
 ] as const
@@ -18,7 +19,7 @@ export const DASHBOARD_NAV = [
 
 export const MOBILE_NAV = [
   { label: 'Home', href: '/', icon: 'Home' },
+  { label: 'AI Digest', href: '/digest', icon: 'Sparkles' },
   { label: 'Plans', href: '/plans', icon: 'CreditCard' },
-  { label: 'API', href: '/api-docs', icon: 'Code' },
   { label: 'Login', href: '/login', icon: 'User' },
 ] as const

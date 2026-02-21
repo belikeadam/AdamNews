@@ -28,6 +28,48 @@ export const AnalyticsSchema = z.object({
   referrer: z.string().max(500).optional(),
 })
 
+/** POST /api/ai/analyze */
+export const AIAnalyzeSchema = z.object({
+  slug: z.string().min(1).max(200),
+  title: z.string().min(1).max(500),
+  content: z.string().min(1).max(20000),
+})
+
+/** POST /api/ai/translate */
+export const AITranslateSchema = z.object({
+  slug: z.string().min(1).max(200),
+  title: z.string().min(1).max(500),
+  content: z.string().min(1).max(20000),
+  targetLang: z.enum(['en', 'ms']),
+})
+
+/** POST /api/ai/chat */
+export const AIChatSchema = z.object({
+  slug: z.string().min(1).max(200),
+  title: z.string().min(1).max(500),
+  content: z.string().min(1).max(20000),
+  question: z.string().min(1).max(500),
+})
+
+/** POST /api/ai/digest */
+export const AIDigestSchema = z.object({
+  categories: z.array(z.string()).min(1).max(10),
+  topArticles: z.array(z.object({
+    title: z.string(),
+    excerpt: z.string(),
+    category: z.string(),
+    slug: z.string(),
+  })).min(1).max(15),
+})
+
+/** POST /api/ai/suggest */
+export const AISuggestSchema = z.object({
+  slug: z.string().min(1).max(200),
+  title: z.string().min(1).max(500),
+  content: z.string().min(1).max(20000),
+  excerpt: z.string().max(1000).optional(),
+})
+
 /** POST /api/articles/[slug]/views — slug validated from URL params */
 export const SlugParamSchema = z.object({
   slug: z.string()

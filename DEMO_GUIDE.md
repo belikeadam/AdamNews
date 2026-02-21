@@ -55,7 +55,7 @@ This section maps each core requirement to **where you can verify it** in the li
 
 | Requirement | Implementation | Where to Verify |
 |------------|----------------|-----------------|
-| **REST API** | 9 API routes (4 GET, 5 POST) with full documentation | `/api-docs` — click "Try it" on any endpoint |
+| **REST API** | 14 API routes (4 GET, 10 POST) including 5 AI endpoints | `/api-docs` — click "Try it" on any endpoint |
 | **Authentication (JWT)** | NextAuth v5 with stateless JWT sessions, OAuth + credentials | Login as Admin → inspect cookies (next-auth.session-token) |
 | **Authorization (RBAC)** | Free/Standard/Premium/Admin roles with tiered access | Login as Reader → premium articles show paywall gate |
 | **Rate limiting** | Token bucket algorithm via Upstash Redis on all API routes | `/api-docs` — check response headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining` |
@@ -204,6 +204,91 @@ This is where reviewers can see the full technical implementation.
 5. Webhook fires automatically → frontend revalidates
 6. Verify the change appears at https://adam-news.vercel.app within seconds
 
+### Step 9: AI Intelligence Features (Powered by Gemini)
+
+Adam News includes a full AI intelligence layer powered by Google Gemini 2.5 Flash. Every feature is production-grade with Redis caching, rate limiting, and graceful error handling. Total cost: **RM 0** (free tier).
+
+#### 9.1: AI Article Intelligence Panel
+
+1. Open any article (e.g., click a Technology article from homepage)
+2. Look for the **"AI Intelligence"** panel below the article toolbar
+3. Click to expand — watch Gemini analyze the article in real-time
+4. You'll see:
+   - **TL;DR** — one-sentence summary
+   - **Key Takeaways** — 3-5 bullet points
+   - **Sentiment badge** — Positive / Neutral / Negative / Mixed
+   - **Fact-Check badge** — Verified / Unverified / Mixed
+   - **Reading Level** — grade level indicator
+   - **Entities** — people, organizations, locations mentioned
+   - **Topics** — auto-generated topic tags
+5. Close and re-open — notice **"CACHED"** badge (served from Redis, no Gemini call)
+6. Try on another article — see different analysis
+
+#### 9.2: Language Toggle (BM <-> EN)
+
+1. On the same article page, find the **"Read in [EN] [BM]"** toggle
+2. Click **BM** — watch the article translate to Bahasa Malaysia
+3. Notice: title and full body content update
+4. Click **EN** — instantly returns to English (cached, no API call)
+5. If Audio Mode is playing, the voice switches to Malay automatically
+
+#### 9.3: Audio Mode (Listen to Article)
+
+1. Find the **AUDIO MODE** bar above the article body
+2. Click **"Listen"** — the article starts reading aloud
+3. Notice: waveform animation and progress bar tracking position
+4. Use **Pause** and **Stop** controls
+5. Switch language to BM, then play — reads in Malay voice
+6. **Zero API cost** — uses browser-native Web Speech API
+
+#### 9.4: Ask This Article (AI Chat)
+
+1. Scroll down on any article page
+2. Find the **"Ask About This Article"** chat widget
+3. Click a **suggested question** or type your own
+4. Watch the AI response appear
+5. Note: the AI only answers from the article content — no hallucination
+6. Try asking: "What does this mean for Malaysia?" or "Summarize in one sentence"
+
+#### 9.5: AI Morning Digest
+
+1. Read 3-4 articles from different categories (this builds your interest profile)
+2. Navigate to **`/digest`**
+3. Watch Gemini generate a personalized morning briefing
+4. You'll see:
+   - Curated headline for today
+   - Personalized intro mentioning your interests
+   - Prioritized stories with urgency badges (high / medium / low)
+   - Closing note
+5. Note: digest is shared-cached by interest profile (multiple similar readers share the same cached digest)
+
+#### 9.6: AI Editor Tools (Admin Dashboard)
+
+1. Navigate to **/dashboard** (must be signed in as Admin)
+2. Scroll down to find the **"AI Editor Tools"** section
+3. Click **"Analyze Article"** to see:
+   - **3 alternative headlines** with predicted engagement scores
+   - **SEO suggestions** (keyword placement, meta description, internal links)
+   - **Auto-generated tags** for the article
+   - **Suggested excerpt** optimized for click-through
+4. This demonstrates editorial AI tools — critical for media companies managing 30+ brands
+
+---
+
+## AI Requirements Coverage
+
+| Requirement | Implementation | Where to Verify |
+|------------|----------------|-----------------|
+| **AI Content Analysis** | Gemini-powered article intelligence (summary, sentiment, entities, fact-check) | Expand AI panel on any article page |
+| **Multilingual AI** | BM <-> EN translation for Malaysia's diverse audience | Language toggle on article page |
+| **Text-to-Speech** | Browser-native Web Speech API with EN/BM voices | Audio Mode on article page |
+| **Conversational AI** | Grounded Q&A chat scoped to article content | Chat widget on article page |
+| **AI Personalization** | Interest-based morning digest | `/digest` page |
+| **AI Editorial Tools** | Headline optimizer, SEO suggestions, auto-tags | Admin dashboard |
+| **Production Caching** | All AI responses cached in Redis (7-30 day TTL) | Second request shows "CACHED" badge |
+| **Rate Limiting** | Self-imposed 8 req/min cap (Gemini free tier) | Rate limit countdown on heavy usage |
+| **Cost: RM 0** | Entire AI layer runs on Google Gemini free tier | All features work without billing |
+
 ---
 
 ## Mobile Testing Checklist
@@ -250,6 +335,10 @@ These patterns directly address senior full-stack requirements:
 | Stripe webhook verification | `src/app/api/stripe/webhook/route.ts` | HMAC signature verification for payment security |
 | Structured JSON logging | `src/lib/logger.ts` | Production monitoring with timing and metadata |
 | Content pipeline | Strapi → Webhook → Revalidate → CDN | End-to-end editorial workflow |
+| AI cache-aside with Gemini | `src/lib/ai/gemini.ts` | Redis → Gemini → Redis pattern with rate limiting |
+| Structured AI output | `src/app/api/ai/*/route.ts` | Gemini JSON mode with typed responses and Zod validation |
+| Graceful AI fallback | `src/app/api/ai/analyze/route.ts` | Never crashes — returns fallback data on Gemini errors |
+| Browser-native TTS | `src/components/article/AudioMode.tsx` | Web Speech API for zero-cost article reading |
 
 ---
 
@@ -269,13 +358,15 @@ Use any future expiry, any 3-digit CVC, any cardholder name.
 
 ```
 Frontend:  Next.js 16 (ISR + SSG + CSR) → Vercel Edge CDN
-Backend:   9 API routes with rate limiting + Zod validation
+Backend:   14 API routes with rate limiting + Zod validation
 CMS:       Strapi v4 (headless) → REST API + webhooks
 Database:  PostgreSQL 16 (Railway)
-Cache:     Upstash Redis (cache-aside + rate limiting)
+Cache:     Upstash Redis (cache-aside + rate limiting + AI cache)
 Payments:  Stripe Checkout (subscriptions + webhooks)
 Auth:      NextAuth v5 (JWT + OAuth + credentials)
-Testing:   Vitest (41 tests), GitHub Actions CI
+AI:        Google Gemini 2.5 Flash (analysis, translation, chat, digest, editor tools)
+Audio:     Web Speech API (browser-native TTS, zero cost)
+Testing:   Vitest (41 unit tests) + Playwright (22 E2E tests), GitHub Actions CI
 DevOps:    Docker Compose (4 services), Vercel + Railway deploy
 ```
 

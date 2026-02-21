@@ -48,6 +48,7 @@ function NavIcon({ name, size = 16 }: { name: string; size?: number }) {
     case 'chevron-right': return <svg {...p}><polyline points="9 18 15 12 9 6"/></svg>
     case 'user': return <svg {...p}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
     case 'star': return <svg {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+    case 'sparkles': return <svg {...p}><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/><path d="M19 13l.75 2.25L22 16l-2.25.75L19 19l-.75-2.25L16 16l2.25-.75L19 13z"/></svg>
     default: return null
   }
 }
@@ -360,6 +361,23 @@ export default function Navbar({ categories }: NavbarProps) {
                         {savedCount}
                       </span>
                     )}
+                  </Link>
+                  <Link
+                    href="/digest"
+                    onClick={closeDrawer}
+                    className={`flex items-center gap-3 px-3.5 py-3 rounded-lg transition-all ${
+                      pathname === '/digest'
+                        ? 'bg-[var(--accent-light)] text-[var(--accent)]'
+                        : 'text-[var(--text)] hover:bg-[var(--surface)]'
+                    }`}
+                  >
+                    <div className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--surface)]">
+                      <NavIcon name="sparkles" size={14} />
+                    </div>
+                    <span className="flex-1 text-sm font-medium">AI Digest</span>
+                    <span className="text-[0.55rem] font-bold bg-[var(--accent)] text-white px-1.5 py-0.5 rounded-full">
+                      NEW
+                    </span>
                   </Link>
                   <Link
                     href="/search?sort=trending"

@@ -54,10 +54,17 @@ const STACK = [
     badgeVariant: 'warning' as const,
   },
   {
+    layer: 'AI',
+    tech: 'Google Gemini 2.5 Flash',
+    detail: 'Article analysis, translation, chat, digest, editor tools — free tier',
+    badge: 'RM 0 cost',
+    badgeVariant: 'success' as const,
+  },
+  {
     layer: 'Testing',
-    tech: 'Vitest',
-    detail: '41 tests — utils, API routes, markdown rendering',
-    badge: '41 passing',
+    tech: 'Vitest + Playwright',
+    detail: '63 tests — 41 unit + 22 E2E (Desktop + Mobile Chrome)',
+    badge: '63 passing',
     badgeVariant: 'success' as const,
   },
   {
@@ -82,7 +89,8 @@ const PAGES = [
   { route: '/search', description: 'Full-text search with category filters', rendering: 'CSR' },
   { route: '/plans', description: 'Subscription plans with Stripe checkout', rendering: 'SSG' },
   { route: '/account', description: 'User profile, plan status, post-checkout', rendering: 'CSR' },
-  { route: '/dashboard', description: 'Admin — analytics, posts, editor', rendering: 'CSR' },
+  { route: '/dashboard', description: 'Admin — analytics, posts, AI editor tools', rendering: 'CSR' },
+  { route: '/digest', description: 'AI morning briefing — personalised by reading history', rendering: 'CSR' },
   { route: '/api-docs', description: 'Interactive API playground', rendering: 'SSG' },
   { route: '/login', description: 'Auth — demo buttons, OAuth, credentials', rendering: 'SSG' },
 ]
@@ -97,6 +105,11 @@ const API_ROUTES = [
   { method: 'POST', path: '/api/articles/[slug]/views', auth: 'Public', purpose: 'View counter increment' },
   { method: 'POST', path: '/api/analytics', auth: 'Public', purpose: 'Scroll depth / read time beacon' },
   { method: 'GET', path: '/api/health', auth: 'Public', purpose: 'System health + dependency checks' },
+  { method: 'POST', path: '/api/ai/analyze', auth: 'Rate-limited', purpose: 'AI article analysis (summary, sentiment, entities)' },
+  { method: 'POST', path: '/api/ai/translate', auth: 'Rate-limited', purpose: 'Translate article (EN ↔ BM)' },
+  { method: 'POST', path: '/api/ai/chat', auth: 'Rate-limited', purpose: 'Ask questions about an article' },
+  { method: 'POST', path: '/api/ai/digest', auth: 'Rate-limited', purpose: 'Personalised morning digest' },
+  { method: 'POST', path: '/api/ai/suggest', auth: 'Rate-limited', purpose: 'AI editor tools (headlines, SEO, tags)' },
 ]
 
 const KEY_PATTERNS = [
@@ -127,8 +140,13 @@ const KEY_PATTERNS = [
   },
   {
     title: 'Input Validation with Zod',
-    desc: 'All API request bodies are validated against Zod schemas. Type-safe parsing with descriptive error messages. Schemas: CheckoutSchema, RevalidateSchema, AnalyticsSchema.',
+    desc: 'All API request bodies are validated against Zod schemas. Type-safe parsing with descriptive error messages. Schemas: CheckoutSchema, RevalidateSchema, AnalyticsSchema, AIAnalyzeSchema.',
     code: 'const { data, error } = await parseBody(request, CheckoutSchema)',
+  },
+  {
+    title: 'AI Cache-Aside with Gemini',
+    desc: 'All AI responses are cached aggressively in Redis (7-30 day TTL). Self-imposed rate limit of 8 req/min keeps within Gemini free tier. Graceful fallback on API errors.',
+    code: 'const result = await callGeminiCached(cacheKey, prompt, TTL, parseJSON)',
   },
 ]
 
@@ -148,7 +166,7 @@ export default function ArchitecturePage() {
         <p className="text-[var(--muted)] max-w-2xl">
           A full-stack news platform built with modern web technologies.
           Server-rendered pages, headless CMS, real-time revalidation,
-          subscription payments, and role-based access control.
+          subscription payments, AI-powered intelligence, and role-based access control.
         </p>
       </div>
 
@@ -348,9 +366,11 @@ export default function ArchitecturePage() {
             <pre className="text-xs font-mono text-[var(--muted)] leading-relaxed overflow-x-auto whitespace-pre">
 {`src/
 ├── app/                  # Next.js App Router pages
-│   ├── api/              # API routes (revalidate, stripe, analytics)
-│   ├── articles/[slug]/  # Article detail (ISR + SEO)
-│   ├── dashboard/        # Admin panel (auth-gated)
+│   ├── api/              # API routes (revalidate, stripe, analytics, ai)
+│   │   └── ai/           # AI endpoints (analyze, translate, chat, digest, suggest)
+│   ├── articles/[slug]/  # Article detail (ISR + SEO + AI features)
+│   ├── dashboard/        # Admin panel (auth-gated + AI editor tools)
+│   ├── digest/           # AI morning briefing (personalised)
 │   ├── account/          # User profile + subscription
 │   ├── plans/            # Pricing + Stripe checkout
 │   ├── search/           # Full-text search
@@ -358,17 +378,19 @@ export default function ArchitecturePage() {
 ├── components/
 │   ├── layout/           # Navbar, Footer, MobileNav, TechBar
 │   ├── reader/           # HeroCarousel, ArticleCard, CategoryFilter
+│   ├── article/          # AI: InsightsPanel, LanguageToggle, AudioMode, Chat
 │   ├── auth/             # LoginStepper, OAuthButton, DemoLoginButtons
 │   ├── ui/               # Card, Badge, Button, Input (design system)
 │   └── shared/           # ArchCallout, DemoBanner, ScrollToTop
 ├── lib/
 │   ├── api/              # Strapi client, Stripe helpers
+│   ├── ai/gemini.ts      # Gemini client, rate limiter, cache-aside
 │   ├── auth.ts           # NextAuth config + demo users
 │   └── utils.ts          # cn(), formatDate, readTime, slugify
 ├── constants/            # meta, plans, nav
-├── hooks/                # useAuth, useBookmarks
-├── types/                # Strapi types, auth types
-└── __tests__/            # Vitest test suites (41 tests)`}
+├── hooks/                # useAuth, useBookmarks, usePersonalization
+├── types/                # Strapi, auth, AI types
+└── __tests__/            # Vitest (41 unit) + Playwright (22 E2E)`}
             </pre>
           </CardContent>
         </Card>

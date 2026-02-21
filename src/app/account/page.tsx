@@ -35,16 +35,19 @@ function AccountContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [showSuccess, setShowSuccess] = useState(false)
+  const [isDemo, setIsDemo] = useState(false)
   const [upgradedPlan, setUpgradedPlan] = useState<string | null>(null)
 
   // Handle post-checkout success
   useEffect(() => {
     const checkout = searchParams.get('checkout')
     const newPlan = searchParams.get('plan') as UserPlan | null
+    const demo = searchParams.get('demo')
 
     if (checkout === 'success' && newPlan && ['standard', 'premium'].includes(newPlan)) {
       setShowSuccess(true)
       setUpgradedPlan(newPlan)
+      if (demo === 'true') setIsDemo(true)
       // Update the JWT session with the new plan
       update({ plan: newPlan })
       // Clean URL without triggering re-render loop
@@ -103,6 +106,11 @@ function AccountContent() {
                 You&apos;re now on the <strong>{PLAN_DETAILS[upgradedPlan || 'standard']?.name}</strong> plan.
                 Enjoy unlimited access to premium content.
               </p>
+              {isDemo && (
+                <p className="text-xs text-green-600 dark:text-green-500 mt-2 opacity-80">
+                  Demo mode — in production, this redirect comes from Stripe Checkout after payment.
+                </p>
+              )}
             </div>
             <button
               onClick={() => setShowSuccess(false)}

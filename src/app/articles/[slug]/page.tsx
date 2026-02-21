@@ -15,6 +15,7 @@ import NextArticleCTA from '@/components/article/NextArticleCTA'
 import ShareRow from '@/components/article/ShareRow'
 import AdSlot from '@/components/shared/AdSlot'
 import LiveReaderCount from '@/components/shared/LiveReaderCount'
+import AIArticleFeatures from '@/components/article/AIArticleFeatures'
 import { getArticleBySlug, getRelatedArticles } from '@/lib/api/strapi'
 import { formatDate, relativeTime, getArticleCoverUrl } from '@/lib/utils'
 import { getCategoryColor } from '@/constants/categories'
@@ -233,6 +234,14 @@ export default async function ArticlePage({ params }: PageProps) {
           title={a.title}
           excerpt={a.excerpt || undefined}
           category={categoryName || undefined}
+        />
+
+        {/* AI Features: Language Toggle, Audio Mode, AI Insights */}
+        <AIArticleFeatures
+          slug={slug}
+          title={a.title}
+          body={typeof a.body === 'string' ? a.body.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 6000) : (a.excerpt || a.title)}
+          categorySlug={categorySlug}
         />
 
         {/* Premium access banner for subscribers viewing premium content */}

@@ -6,6 +6,7 @@ import BarChart from '@/components/dashboard/Chart'
 import Card, { CardContent, CardHeader } from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
 import ArchCallout from '@/components/shared/ArchCallout'
+import AIEditorTools from '@/components/dashboard/AIEditorTools'
 
 // Demo data
 const PAGEVIEWS_DATA = Array.from({ length: 14 }, (_, i) => ({
@@ -194,6 +195,9 @@ export default function DashboardOverview() {
           </CardContent>
         </Card>
       </div>
+
+      {/* AI Editor Tools */}
+      <AIEditorTools />
 
       <ArchCallout
         apiCall="Dashboard data from Strapi REST + Redis cache + Vercel Analytics"
