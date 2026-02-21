@@ -27,6 +27,12 @@ function MetaBar({ article }: { article: Article }) {
           {a.views >= 1000 ? `${(a.views / 1000).toFixed(1)}k` : a.views}
         </span>
       )}
+      {a.premium && (
+        <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-medium">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Premium
+        </span>
+      )}
       {a.trending && (
         <span className="flex items-center gap-1 text-[var(--accent)] font-medium">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
@@ -107,6 +113,7 @@ export default function ArticleCard({ article, variant = 'default' }: ArticleCar
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             {categoryName && <span className="section-label">{categoryName}</span>}
+            {a.premium && <span className="text-[0.6rem] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">Premium</span>}
             {a.readTime && <span className="text-[0.65rem] text-[var(--muted)]">{a.readTime}</span>}
           </div>
           <h3 className="headline-md text-base line-clamp-2 mt-0.5 group-hover:text-[var(--accent)] transition-colors">
@@ -124,7 +131,10 @@ export default function ArticleCard({ article, variant = 'default' }: ArticleCar
   if (variant === 'compact') {
     return (
       <Link href={`/articles/${a.slug}`} className="group block pb-5 border-b border-[var(--border)]">
-        {categoryName && <span className="section-label">{categoryName}</span>}
+        <div className="flex items-center gap-2">
+          {categoryName && <span className="section-label">{categoryName}</span>}
+          {a.premium && <span className="text-[0.6rem] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">Premium</span>}
+        </div>
         <h3 className="headline-md line-clamp-2 mt-1 mb-1.5 group-hover:text-[var(--accent)] transition-colors">
           {a.title}
         </h3>
@@ -155,7 +165,13 @@ export default function ArticleCard({ article, variant = 'default' }: ArticleCar
           className="object-cover group-hover:scale-[1.03] transition-transform duration-500 ease-out"
         />
         <BookmarkButton article={article} />
-        {a.trending && (
+        {a.premium && (
+          <span className="absolute top-2 left-2 z-10 flex items-center gap-1 px-2 py-0.5 bg-amber-600 text-white text-[0.6rem] font-bold uppercase tracking-wider rounded-sm">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Premium
+          </span>
+        )}
+        {a.trending && !a.premium && (
           <span className="absolute top-2 left-2 z-10 flex items-center gap-1 px-2 py-0.5 bg-[var(--accent)] text-white text-[0.6rem] font-bold uppercase tracking-wider rounded-sm">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
             Trending

@@ -23,7 +23,7 @@ export default function MobileNav() {
     ...(isLoading
       ? [{ label: 'Account', href: '#', icon: 'User' }]
       : isAuthenticated
-        ? [{ label: 'Account', href: '/dashboard', icon: 'User' }]
+        ? [{ label: 'Account', href: '/account', icon: 'User' }]
         : [{ label: 'Sign in', href: '/login', icon: 'User' }]),
   ]
 

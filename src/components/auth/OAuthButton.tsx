@@ -3,12 +3,12 @@
 import { signIn } from 'next-auth/react'
 import Button from '@/components/ui/Button'
 
-export default function OAuthButton() {
+export default function OAuthButton({ callbackUrl = '/' }: { callbackUrl?: string }) {
   return (
     <Button
       variant="outline"
       className="w-full max-w-sm mx-auto"
-      onClick={() => signIn('google', { callbackUrl: '/' })}
+      onClick={() => signIn('google', { callbackUrl })}
     >
       <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
         <path

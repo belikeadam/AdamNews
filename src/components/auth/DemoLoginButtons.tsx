@@ -23,7 +23,7 @@ const DEMO_ACCOUNTS = [
   },
 ]
 
-export default function DemoLoginButtons() {
+export default function DemoLoginButtons({ callbackUrl = '/' }: { callbackUrl?: string }) {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
 
@@ -40,7 +40,7 @@ export default function DemoLoginButtons() {
       return
     }
 
-    router.push('/')
+    router.push(callbackUrl)
     router.refresh()
   }
 

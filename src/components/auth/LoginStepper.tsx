@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 
-export default function LoginStepper() {
+export default function LoginStepper({ callbackUrl = '/' }: { callbackUrl?: string }) {
   const router = useRouter()
   const [step, setStep] = useState(1)
   const [email, setEmail] = useState('')
@@ -40,7 +40,7 @@ export default function LoginStepper() {
       return
     }
 
-    router.push('/')
+    router.push(callbackUrl)
     router.refresh()
   }
 
