@@ -1,9 +1,12 @@
 'use client'
 
+import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import Editor from '@/components/dashboard/Editor'
 import ArchCallout from '@/components/shared/ArchCallout'
+import ToastContainer from '@/components/shared/Toast'
+import { useToast } from '@/hooks/useToast'
 
 const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'
 
@@ -12,6 +15,7 @@ export default function EditPostPage() {
   const router = useRouter()
   const articleId = params.id as string
   const isNew = articleId === 'new'
+  const { toasts, addToast, removeToast } = useToast()
 
   const [initial, setInitial] = useState<{
     title: string
@@ -44,13 +48,14 @@ export default function EditPostPage() {
         })
       } catch {
         setInitial({ title: '', body: '', category: '', premium: false })
+        addToast('Could not load article — starting fresh', 'error')
       } finally {
         setLoading(false)
       }
     }
 
     fetchArticle()
-  }, [articleId, isNew])
+  }, [articleId, isNew]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSave = async (data: {
     title: string
@@ -117,17 +122,20 @@ export default function EditPostPage() {
         }).catch(() => {})
       }
 
-      alert(
-        data.status === 'published'
-          ? `Published! View at /articles/${slug}`
-          : 'Draft saved.'
-      )
+      if (data.status === 'published') {
+        addToast(`Published! Live at /articles/${slug}`, 'success')
+      } else {
+        addToast('Draft saved successfully', 'info')
+      }
 
       if (isNew && saved.data?.id) {
         router.replace(`/dashboard/posts/${saved.data.id}/edit`)
       }
     } catch (err) {
-      alert(`Error: ${err instanceof Error ? err.message : 'Save failed'}`)
+      addToast(
+        `Error: ${err instanceof Error ? err.message : 'Save failed'}`,
+        'error'
+      )
     }
   }
 
@@ -139,6 +147,19 @@ export default function EditPostPage() {
 
   return (
     <div className="space-y-6">
+      {/* Back navigation */}
+      <div className="flex items-center gap-3">
+        <Link
+          href="/dashboard/posts"
+          className="text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors flex items-center gap-1"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          Back to Posts
+        </Link>
+      </div>
+
       <h1 className="text-2xl font-bold text-[var(--text)]">
         {isNew ? 'New Article' : 'Edit Article'}
       </h1>
@@ -157,6 +178,8 @@ export default function EditPostPage() {
         auth="Public role has full CRUD via bootstrap permissions"
         rationale="Editor writes to Strapi REST, triggers ISR webhook for instant cache purge."
       />
+
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   )
 }

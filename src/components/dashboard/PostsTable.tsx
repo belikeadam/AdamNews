@@ -18,6 +18,7 @@ interface Post {
 
 interface PostsTableProps {
   posts: Post[]
+  onDelete?: (id: number, title: string) => void
 }
 
 const STATUS_VARIANT = {
@@ -27,7 +28,7 @@ const STATUS_VARIANT = {
   review: 'warning' as const,
 }
 
-export default function PostsTable({ posts }: PostsTableProps) {
+export default function PostsTable({ posts, onDelete }: PostsTableProps) {
   if (posts.length === 0) {
     return (
       <div className="text-center py-12">
@@ -59,14 +60,14 @@ export default function PostsTable({ posts }: PostsTableProps) {
             <th className="pb-3 font-medium text-[var(--muted)] hidden lg:table-cell">
               Date
             </th>
-            <th className="pb-3 font-medium text-[var(--muted)]">Actions</th>
+            <th className="pb-3 font-medium text-[var(--muted)] text-right">Actions</th>
           </tr>
         </thead>
         <tbody>
           {posts.map((post) => (
             <tr
               key={post.id}
-              className="border-b border-[var(--border)] hover:bg-[var(--surface)]"
+              className="border-b border-[var(--border)] hover:bg-[var(--surface)] transition-colors"
             >
               <td className="py-3 pr-4">
                 <div className="flex items-center gap-2">
@@ -94,12 +95,22 @@ export default function PostsTable({ posts }: PostsTableProps) {
                 {formatDate(post.date)}
               </td>
               <td className="py-3">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-end gap-1">
                   <Link href={`/dashboard/posts/${post.id}/edit`}>
                     <Button variant="ghost" size="sm">
                       Edit
                     </Button>
                   </Link>
+                  {onDelete && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="!text-[var(--danger)] hover:!bg-red-50 dark:hover:!bg-red-900/20"
+                      onClick={() => onDelete(post.id, post.title)}
+                    >
+                      Delete
+                    </Button>
+                  )}
                 </div>
               </td>
             </tr>
