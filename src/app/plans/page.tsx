@@ -11,25 +11,22 @@ export default function PlansPage() {
   const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly')
 
   const handleSubscribe = async (planId: string) => {
-    const plan = PLANS.find((p) => p.id === planId)
-    if (!plan || planId === 'free') {
+    if (planId === 'free') {
       window.location.href = '/login'
-      return
-    }
-
-    const priceId = plan.stripePriceId[billing]
-    if (!priceId) {
-      alert('Stripe not configured. Set price IDs in .env')
       return
     }
 
     const res = await fetch('/api/stripe/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ priceId }),
+      body: JSON.stringify({ planId, billing }),
     })
 
     const data = await res.json()
+    if (data.error) {
+      alert(data.error)
+      return
+    }
     if (data.url) {
       window.location.href = data.url
     }
